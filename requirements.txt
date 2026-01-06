@@ -1,0 +1,20 @@
+# --- Framework de base ---
+Django==5.0
+djangorestframework==3.14.0
+djangorestframework-simplejwt==5.3.1
+
+# --- Base de données & Déploiement ---
+psycopg2-binary==2.9.9         # Driver pour PostgreSQL (Railway)
+dj-database-url==2.1.0         # Pour lire DATABASE_URL automatiquement
+gunicorn==21.2.0               # Serveur HTTP de production
+whitenoise==6.6.0              # Gestion ultra-efficace des fichiers statiques
+
+# --- Gestion des images (Cloudinary) ---
+cloudinary==1.38.0
+django-cloudinary-storage==0.3.0
+Pillow==10.2.0                 # Nécessaire pour le traitement d'images Django
+
+# --- Sécurité & Utilitaires ---
+django-cors-headers==4.3.1     # Pour autoriser React à parler à Django
+python-dotenv==1.0.1           # Pour gérer les variables .env en local
+requests==2.31.0               # Pour les futurs appels API (WhatsApp)

@@ -1,0 +1,31 @@
+services:
+  # --- Base de données PostgreSQL ---
+  db:
+    image: postgres:15
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_DB=niplan_db
+      - POSTGRES_USER=niplan_user
+      - POSTGRES_PASSWORD=niplan_pass
+    ports:
+      - "5432:5432"
+
+  # --- Application Django ---
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+      - DATABASE_URL=postgres://niplan_user:niplan_pass@db:5432/niplan_db
+    env_file:
+      - .env
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
