@@ -79,6 +79,11 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.name} - {self.business.name}"
     
+    def save(self, *args, **kwargs):
+        if self.is_available is None:
+            self.is_available = True
+        super().save(*args, **kwargs)
+    
 
 class OTPCode(models.Model):
     phone_number = models.CharField(max_length=20)

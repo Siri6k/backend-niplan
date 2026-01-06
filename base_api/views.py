@@ -28,7 +28,7 @@ class VerifyOTPView(APIView):
     def post(self, request):
         phone = request.data.get('phone_whatsapp')
         code = request.data.get('code')
-        
+        print("Code reçu:", code)
         try:
             otp = OTPCode.objects.get(phone_number=phone, code=code)
             user = User.objects.get(phone_whatsapp=phone)
@@ -54,13 +54,31 @@ class ProductListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
 # 2. CRUD Produits pour le vendeur (Privé - Dashboard)
+from rest_framework.exceptions import ValidationError
+
+# 3. Liste privée pour le Dashboard (Uniquement les miens)
+class MyProductListView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # On filtre strictement par le business de l'utilisateur connecté
+        return Product.objects.filter(business=self.request.user.business).order_by('-created_at')
+
 class MyProductCreateView(generics.CreateAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        # On attache automatiquement le produit au business de l'user connecté
-        serializer.save(business=self.request.user.business)
+        user = self.request.user
+
+        if not hasattr(user, "business") or not user.business:
+            raise ValidationError(
+                {"business": "Vous devez créer un business avant d’ajouter un produit."}
+            )
+
+        serializer.save(business=user.business)
+
 
 class MyProductDeleteView(generics.DestroyAPIView):
     serializer_class = ProductSerializer
@@ -77,7 +95,7 @@ class BusinessDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.AllowAny]
 
 # Mise à jour de sa propre boutique (Logo, Nom)
-class MyBusinessUpdateView(generics.UpdateAPIView):
+class MyBusinessUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = BusinessSerializer
     permission_classes = [permissions.IsAuthenticated]
 

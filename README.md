@@ -7,6 +7,7 @@
 ## 🌟 Pourquoi Niplan Market ?
 
 En RDC, la majorité du commerce se fait via WhatsApp. Cependant, les vendeurs font face à trois problèmes :
+
 1. **Éphémérité :** Les status disparaissent après 24h.
 2. **Friction :** Répéter les prix et détails manuellement à chaque client est épuisant.
 3. **Visibilité :** Les produits ne sont pas indexés sur Google.
@@ -35,7 +36,9 @@ En RDC, la majorité du commerce se fait via WhatsApp. Cependant, les vendeurs f
 ## 🚀 Installation & Lancement
 
 ### Avec Docker (Recommandé)
+
 1. Clonez le projet :
    ```bash
-   git clone [https://github.com/ton-username/kifanyi.git](https://github.com/ton-username/kifanyi.git)
-   cd kifanyi
+   git clone [https://github.com/Siri6k/backend-niplan.git](https://github.com/Siri6k/backend-niplan.git)
+
+   ```

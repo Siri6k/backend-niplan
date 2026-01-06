@@ -10,8 +10,9 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'business', 'business_name', 'name', 'description', 
             'price', 'currency', 'image', 'exchange_for', 
-            'location', 'is_available', 'created_at'
+            'location', 'is_available', 'created_at', 'business'
         ]
+        read_only_fields = ['business'] # <--- AJOUTE CECI
 
 # Serializer pour le Business (Profil de la boutique)
 class BusinessSerializer(serializers.ModelSerializer):
