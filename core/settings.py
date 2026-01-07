@@ -72,7 +72,12 @@ DATABASES = {
         conn_max_age=600
     )
 }
-
+# AJOUTE CECI JUSTE EN DESSOUS :
+if not DEBUG:  # Si on est en production sur Render
+    DATABASES['default']['OPTIONS'] = {
+        'sslmode': 'require',
+    }
+    
 # --- AUTHENTIFICATION ---
 AUTH_USER_MODEL = 'base_api.User'
 
