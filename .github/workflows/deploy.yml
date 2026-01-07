@@ -1,9 +1,9 @@
-name: Deploy on RENDER
+name: Deploy on DOCKER HUB and RENDER
 
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build-and-deploy:
