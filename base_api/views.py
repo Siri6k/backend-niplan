@@ -8,12 +8,10 @@ from .models import User, Business, Product, OTPCode
 from .serializers import UserSerializer, BusinessSerializer, ProductSerializer
 import requests
 import os
-
+from rest_framework.permissions import IsAdminUser
+from django.contrib.auth import get_user_model
 
 import random # N'oublie pas l'import
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import permissions
 
 class RequestOTPView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -142,3 +140,32 @@ def send_whatsapp_otp(phone_number, code):
     response = requests.request("POST", url, headers=headers, data=payload)
     
     print(response.text)
+
+
+
+class AdminUserListView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        users = User.objects.all().order_by('-date_joined')
+        data = [{
+            "id": u.id,
+            "phone": u.phone_whatsapp,
+            "is_active": u.is_active,
+            "date_joined": u.date_joined.strftime("%d/%m/%Y %H:%M")
+        } for u in users]
+        return Response(data)
+
+class AdminOTPLogView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        # On récupère les 20 derniers codes générés
+        otps = OTPCode.objects.all().order_by('-id')[:20]
+        data = [{
+            "id": o.id,
+            "phone": o.phone_number,
+            "code": o.code,
+            "created_at": o.created_at.strftime("%H:%M:%S") # Heure de génération
+        } for o in otps]
+        return Response(data)

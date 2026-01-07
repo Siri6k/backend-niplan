@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from base_api.views import (
-    MyProductListView, RequestOTPView, VerifyOTPView, 
+    AdminOTPLogView, AdminUserListView, MyProductListView, RequestOTPView, VerifyOTPView, 
     ProductListView, MyProductCreateView, MyProductDeleteView,
     BusinessDetailView, MyBusinessUpdateView
 )
@@ -24,6 +24,10 @@ urlpatterns = [
     # --- BUSINESS / BOUTIQUE ---
     path('api/business/<slug:slug>/', BusinessDetailView.as_view(), name='business-detail'),
     path('api/my-business/update/', MyBusinessUpdateView.as_view(), name='business-update'),
+
+    # --- ADMIN ---
+    path('api/admin/users/', AdminUserListView.as_view(), name='admin-users'),
+    path('api/admin/otps/', AdminOTPLogView.as_view(), name='admin-otps'),
 ]
 
 # Servir les fichiers média en local (Cloudinary prend le relais en prod)
