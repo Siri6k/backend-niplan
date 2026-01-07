@@ -1,26 +1,32 @@
+import json
+from random import randint
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, Business, Product, OTPCode
 from .serializers import UserSerializer, BusinessSerializer, ProductSerializer
+import requests
+import os
+
+
 
 class RequestOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         phone = request.data.get('phone_whatsapp')
-        if not phone:
-            return Response({"error": "Numéro requis"}, status=400)
-        
-        # On crée ou récupère l'user (is_active=False par défaut)
-        user, created = User.objects.get_or_create(phone_whatsapp=phone)
-        
-        # Génération d'un code (ici fixe '1234' pour le mode gratuit)
-        code = "1234" 
+        # ... logique de création d'utilisateur ...
+
+        code = str(randint(100000, 999999)) # Génère un vrai code aléatoire
         OTPCode.objects.update_or_create(phone_number=phone, defaults={'code': code})
-        
-        return Response({"message": "Code généré", "code_debug": code})
+
+        # --- ENVOI DU BOT ---
+        try:
+            send_whatsapp_otp(phone, code)
+            return Response({"message": "Code envoyé sur WhatsApp"})
+        except Exception as e:
+            return Response({"error": "Erreur d'envoi"}, status=500)
 
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -101,3 +107,16 @@ class MyBusinessUpdateView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user.business
+    
+def send_whatsapp_otp(phone_number, code):
+    ultraMSGInstance = os.getenv('ULTRAMSG_INSTANCE')
+    url = f"https://api.ultramsg.com/{ultraMSGInstance}/messages/chat"
+    payload = json.dumps({
+        "token": "{TOKEN}",
+        "to": phone_number,
+        "body": f"Votre code Niplan Market est : *{code}*"
+    })
+    headers = {'Content-Type': 'application/json'}
+    response = requests.request("POST", url, headers=headers, data=payload)
+    
+    print(response.text)
