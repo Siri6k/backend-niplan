@@ -10,36 +10,58 @@ import requests
 import os
 
 
+import random # N'oublie pas l'import
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
 
 class RequestOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
         phone = request.data.get('phone_whatsapp')
-        # ... logique de création d'utilisateur ...
+        
+        if not phone:
+            return Response({"error": "Numéro requis"}, status=400)
+        if phone.startswith('+'):
+            phone = phone[1:]  # Enlève le '+'
 
-        code = str(randint(100000, 999999)) # Génère un vrai code aléatoire
-        OTPCode.objects.update_or_create(phone_number=phone, defaults={'code': code})
+        # 1. Génération du code (6 chiffres)
+        code = str(random.randint(100000, 999999)) 
+        
+        # 2. Sauvegarde ou mise à jour en base de données
+        OTPCode.objects.update_or_create(
+            phone_number=phone, 
+            defaults={'code': code}
+        )
 
-        # --- ENVOI DU BOT ---
-        try:
-            send_whatsapp_otp(phone, code)
-            return Response({"message": "Code envoyé sur WhatsApp"})
-        except Exception as e:
-            return Response({"error": "Erreur d'envoi"}, status=500)
+        # 3. Réponse directe avec le code (On enlève la logique WhatsApp)
+        return Response({
+            "status": "success",
+            "message": "Code généré avec succès",
+            "otp_code": code  # Le frontend pourra lire ce champ
+        })
 
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        phone = request.data.get('phone_whatsapp')
-        code = request.data.get('code')
+        phone = request.data.get('phone_whatsapp').strip()
+        code = request.data.get('code').strip()
+        if not phone:
+            return Response({"error": "Numéro requis"}, status=400)
+        if phone.startswith('+'):
+            phone = phone[1:]  # Enlève le '+'
+
         print("Code reçu:", code)
         try:
+            print("Vérification du code pour le numéro:", phone)
             otp = OTPCode.objects.get(phone_number=phone, code=code)
-            user = User.objects.get(phone_whatsapp=phone)
-            user.is_active = True
-            user.save()
+            print("Code valide trouvé:", otp.code)
+            user = User.objects.get_or_create(phone_whatsapp=phone)[0]
+            if not user.is_active:
+                user.is_active = True
+                user.save()
             
             refresh = RefreshToken.for_user(user)
             return Response({
