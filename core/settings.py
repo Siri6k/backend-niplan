@@ -97,8 +97,9 @@ SIMPLE_JWT = {
 }
 
 # --- FICHIERS STATIQUES & MÉDIA (Cloudinary) ---
+# 1. Chemin où collecter les fichiers
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 CLOUDINARY_STORAGE = {

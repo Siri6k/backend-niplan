@@ -19,11 +19,14 @@ WORKDIR /app
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
+
 # 6. Copie du projet
 COPY . /app/
+# 7.Collecte les fichiers statiques (crée le dossier /app/staticfiles)
+RUN python manage.py collectstatic --noinput
 
-# 7. Port exposé par Django
+# 8. Port exposé par Django
 EXPOSE 8000
 
-# 8. Commande de lancement (utilisant Gunicorn pour la prod)
+# 9. Commande de lancement (utilisant Gunicorn pour la prod)
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
