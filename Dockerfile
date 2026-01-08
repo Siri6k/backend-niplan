@@ -26,10 +26,14 @@ COPY . /app/
 
 # 7. On enlève le RUN collectstatic d'ici
 # (Car il plante car il n'a pas les variables d'environnement)
+# Configure secret key
+ARG SECRET_KEY
+ENV SECRET_KEY=$SECRET_KEY
+
 
 # 8. Port exposé
 EXPOSE 8000
 
 # 9. Commande de lancement modifiée : 
-# On lance le collectstatic juste avant Gunicorn
-CMD sh -c "python manage.py collectstatic --noinput --clear && gunicorn --bind 0.0.0.0:8000 core.wsgi:application"
+# On lance collectstatic de manière simple
+CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 core.wsgi:application"]

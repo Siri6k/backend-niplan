@@ -12,18 +12,18 @@ ALLOWED_HOSTS = ['*'] # À restreindre plus tard à ton domaine .vercel.app ou .
 
 # --- APPS ---
 INSTALLED_APPS = [
-    'cloudinary_storage', # Toujours avant staticfiles
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'whitenoise.runserver_nostatic',
     'django.contrib.staticfiles',
-    
+    'cloudinary_storage', # Pour Cloudinary
+    'cloudinary',
+    'whitenoise.runserver_nostatic',
+
     'rest_framework',
     'corsheaders',
-    'cloudinary',
     'rest_framework_simplejwt',
     'base_api', # Ton application
 ]
