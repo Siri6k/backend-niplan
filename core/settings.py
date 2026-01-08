@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt',
     'base_api', # Ton application
+    'drf_spectacular', # Pour la documentation API
 ]
 
 # --- MIDDLEWARE ---
@@ -119,3 +120,17 @@ DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 # --- CORS (Pour la connexion avec le Frontend Vercel) ---
 CORS_ALLOW_ALL_ORIGINS = True # Pour le MVP, simplifie la connexion avec Vercel
 # À restreindre plus tard avec CORS_ALLOWED_ORIGINS = [...]
+CORS_ALLOW_ALLOWED_ORIGINS = [
+    'https://niplan-market.vercel.app',
+    'http://localhost:3000', # Pour le développement local
+]
+
+
+# Configure le schéma OpenAPI
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Niplan API',
+    'DESCRIPTION': 'Documentation de l\'API Niplan pour les vendeurs et les clients.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False, # Pour servir la doc HTML sans le fichier schema brut
+    # ... autres options si besoin
+}

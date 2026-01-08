@@ -7,9 +7,19 @@ from base_api.views import (
     ProductListView, MyProductCreateView, MyProductDeleteView,
     BusinessDetailView, MyBusinessUpdateView
 )
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+
+    # Tes URLs API existantes
+    path('', include('base_api.urls')), 
+
+    # URLs pour la documentation
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    # Vue Swagger UI : ta documentation interactive !
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 
     # --- AUTHENTIFICATION ---
     path('api/auth/request-otp/', RequestOTPView.as_view(), name='request-otp'),
