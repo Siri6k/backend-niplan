@@ -22,11 +22,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # 6. Copie du projet
 COPY . /app/
-# 7.Collecte les fichiers statiques (crée le dossier /app/staticfiles)
-RUN python manage.py collectstatic --noinput
+# ... (étapes 1 à 6 inchangées)
 
-# 8. Port exposé par Django
+# 7. On enlève le RUN collectstatic d'ici
+# (Car il plante car il n'a pas les variables d'environnement)
+
+# 8. Port exposé
 EXPOSE 8000
 
-# 9. Commande de lancement (utilisant Gunicorn pour la prod)
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "core.wsgi:application"]
+# 9. Commande de lancement modifiée : 
+# On lance le collectstatic juste avant Gunicorn
+CMD sh -c "python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 core.wsgi:application"

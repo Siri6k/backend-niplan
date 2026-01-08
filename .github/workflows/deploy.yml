@@ -29,9 +29,3 @@ jobs:
           push: true
           # Utilisation du tag latest pour la prod
           tags: ${{ secrets.DOCKER_USERNAME }}/niplan-backend:latest
-
-      # --- ÉTAPE CRUCIALE POUR RENDER ---
-      - name: Trigger Render Deployment
-        # On utilise curl pour appeler l'URL de déploiement de Render
-        run: |
-          curl -f ${{ secrets.RENDER_DEPLOY_HOOK_URL }}

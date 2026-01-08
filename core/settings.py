@@ -68,7 +68,7 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # --- BASE DE DONNÉES (Railway auto-config) ---
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=os.environ.get('DATABASE_URL', 'sqlite:///db.sqlite3'),
         conn_max_age=600
     )
 }
@@ -77,6 +77,7 @@ if not DEBUG:  # Si on est en production sur Render
     DATABASES['default']['OPTIONS'] = {
         'sslmode': 'require',
     }
+
     
 # --- AUTHENTIFICATION ---
 AUTH_USER_MODEL = 'base_api.User'
@@ -100,7 +101,12 @@ SIMPLE_JWT = {
 # 1. Chemin où collecter les fichiers
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# On utilise la compression mais on ne bloque pas si un fichier manque (plus sûr pour Docker)
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
+
+# Optionnel : Si tu veux garder le Manifest, ajoute cette ligne pour ignorer les erreurs
+WHITENOISE_MANIFEST_STRICT = False
+
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_NAME'),
@@ -110,4 +116,5 @@ CLOUDINARY_STORAGE = {
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
 # --- CORS (Pour la connexion avec le Frontend Vercel) ---
-CORS_ALLOW_ALL_ORIGINS = True # Pour le MVP, simplifie la connexion
+CORS_ALLOW_ALL_ORIGINS = True # Pour le MVP, simplifie la connexion avec Vercel
+# À restreindre plus tard avec CORS_ALLOWED_ORIGINS = [...]
