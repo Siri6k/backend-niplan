@@ -13,9 +13,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 urlpatterns = [
     path('admin/', admin.site.urls),
 
-    # Tes URLs API existantes
-    path('', include('base_api.urls')), 
-
+   
     # URLs pour la documentation
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     # Vue Swagger UI : ta documentation interactive !
