@@ -98,15 +98,16 @@ SIMPLE_JWT = {
 }
 
 # --- FICHIERS STATIQUES & MÉDIA (Cloudinary) ---
-# 1. Chemin où collecter les fichiers
+# settings.py
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# On utilise la compression mais on ne bloque pas si un fichier manque (plus sûr pour Docker)
+
+# Utilise cette classe plus simple (elle compresse mais ne crée pas de manifeste complexe)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 
-# Optionnel : Si tu veux garder le Manifest, ajoute cette ligne pour ignorer les erreurs
+# Indispensable pour éviter que le build plante sur un fichier JS de l'admin
 WHITENOISE_MANIFEST_STRICT = False
-
 
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_NAME'),
