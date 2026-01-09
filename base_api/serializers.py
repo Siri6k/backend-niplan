@@ -9,7 +9,7 @@ class ProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'business', 'business_name', 'name', 'description', 
-            'price', 'currency', 'image', 'exchange_for', 
+            'price', 'currency', 'image', 'exchange_for', 'slug',
             'location', 'is_available', 'created_at', 'business'
         ]
         read_only_fields = ['business'] # <--- AJOUTE CECI
