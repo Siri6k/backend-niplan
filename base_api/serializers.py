@@ -23,7 +23,7 @@ class BusinessSerializer(serializers.ModelSerializer):
         model = Business
         fields = [
             'id', 'owner_phone', 'name', 'slug', 'description', 
-            'logo', 'business_type', 'products', 'created_at'
+            'logo', 'business_type', 'products', 'created_at', 'location'
         ]
 
 # Serializer pour l'Utilisateur

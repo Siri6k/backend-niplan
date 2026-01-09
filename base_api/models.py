@@ -46,6 +46,7 @@ class Business(models.Model):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True)
+    location = models.CharField(max_length=100, default='Kinshasa, RDC')
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     business_type = models.CharField(max_length=10, choices=TYPES, default='SHOP')
     created_at = models.DateTimeField(auto_now_add=True)
