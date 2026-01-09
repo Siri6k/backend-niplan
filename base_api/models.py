@@ -1,3 +1,4 @@
+import uuid
 from django.utils.text import slugify
 
 from django.contrib.auth.models import AbstractUser, BaseUserManager
@@ -59,12 +60,20 @@ class Business(models.Model):
 
 
 class Product(models.Model):
+    CURRENCY_CHOICES = [
+        ('USD', 'US Dollar'),
+        ('CDF', 'Franc Congolais'),
+        ]
+        
     business = models.ForeignKey(Business, on_delete=models.CASCADE, related_name='products')
     name = models.CharField(max_length=200)
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=5, default="USD") # USD ou CDF
     image = models.ImageField(upload_to='products/')
+    # models.py
+    slug = models.SlugField(max_length=250, unique=True, null=True, blank=True)
+
     
     # Pour le TROC : Ce que le vendeur recherche en échange
     exchange_for = models.CharField(max_length=200, blank=True, null=True)
@@ -79,6 +88,11 @@ class Product(models.Model):
         return f"{self.name} - {self.business.name}"
     
     def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+            # Optionnel: ajouter un ID unique si deux produits ont le même nom
+            if Product.objects.filter(slug=self.slug).exists():
+                self.slug = f"{self.slug}-{str(uuid.uuid4())[:8]}"
         if self.is_available is None:
             self.is_available = True
         super().save(*args, **kwargs)

@@ -20,7 +20,7 @@ def create_automated_business(sender, instance, created, **kwargs):
             owner=instance,
             name=default_name,
             slug=unique_slug,
-            description="Bienvenue dans ma nouvelle boutique Kifanyi !"
+            description="Bienvenue dans ma nouvelle boutique Niplan Market !"
         )
 
 @receiver(post_save, sender=User)

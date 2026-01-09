@@ -1,5 +1,6 @@
 import json
 from random import randint
+from django.conf import settings
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -32,12 +33,13 @@ class RequestOTPView(APIView):
             phone_number=phone, 
             defaults={'code': code}
         )
+        if settings.DEBUG:
+            print(f"[DEBUG] Code OTP pour {phone} : {code}")
 
         # 3. Réponse directe avec le code (On enlève la logique WhatsApp)
         return Response({
             "status": "success",
             "message": "Code généré avec succès",
-            "otp_code": code  # Le frontend pourra lire ce champ
         })
 
 class VerifyOTPView(APIView):
@@ -60,17 +62,23 @@ class VerifyOTPView(APIView):
             if not user.is_active:
                 user.is_active = True
                 user.save()
-            
+            role="vendor"
+
+            if user.is_superuser is True:
+                role="superadmin"
+            print("Génération des tokens pour l'utilisateur:", user.phone_whatsapp)
+                       
             refresh = RefreshToken.for_user(user)
             return Response({
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
-                "business_slug": user.business.slug
+                "business_slug": user.business.slug,
+                "role": role,
+                "message": "Authentification réussie"
             })
         except:
             return Response({"error": "Code invalide"}, status=400)
         
-
 
 
 # 1. Liste de tous les produits (Public - Home Page)
