@@ -95,7 +95,9 @@ class Product(models.Model):
             self.slug = slugify(self.name)
             # Optionnel: ajouter un ID unique si deux produits ont le même nom
             if Product.objects.filter(slug=self.slug).exists():
-                self.slug = f"{self.slug}-{str(uuid.uuid4())[:8]}"
+                self.slug = f"{self.slug}-by-{slugify(self.business.name)}"
+                if Product.objects.filter(slug=self.slug).exists():
+                    self.slug = f"{self.slug}-{slugify(self.business.name)}-{str(uuid.uuid4())[:8]}"
         self.is_available = True
         super().save(*args, **kwargs)
     
