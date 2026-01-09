@@ -36,4 +36,4 @@ EXPOSE 8000
 
 # 9. Commande de lancement modifiée : 
 # On lance collectstatic de manière simple
-CMD ["sh", "-c", "python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 core.wsgi:application"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py collectstatic --noinput && gunicorn --bind 0.0.0.0:8000 core.wsgi:application"]
