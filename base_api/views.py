@@ -115,10 +115,18 @@ class MyProductCreateView(generics.CreateAPIView):
 
         serializer.save(business=user.business)
 
+class MyProductEditView(generics.UpdateAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'slug' # Pour chercher par /maman-claire/ au lieu de l'ID
+
+    def get_queryset(self):
+        return Product.objects.filter(business=self.request.user.business)
 
 class MyProductDeleteView(generics.DestroyAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'slug' # Pour chercher par /maman-claire/ au lieu de l'ID
 
     def get_queryset(self):
         return Product.objects.filter(business=self.request.user.business)

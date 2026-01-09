@@ -3,7 +3,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from base_api.views import (
-    AdminOTPLogView, AdminUserListView, MyProductListView, RequestOTPView, VerifyOTPView, 
+    AdminOTPLogView, AdminUserListView, MyProductEditView, MyProductListView, RequestOTPView, VerifyOTPView, 
     ProductListView, MyProductCreateView, MyProductDeleteView,
     BusinessDetailView, MyBusinessUpdateView
 )
@@ -27,7 +27,8 @@ urlpatterns = [
     path('api/products/', ProductListView.as_view(), name='product-list'),
     path('api/my-products/', MyProductListView.as_view(), name='my-product-list'),
     path('api/my-products/create/', MyProductCreateView.as_view(), name='product-create'),
-    path('api/my-products/<int:pk>/delete/', MyProductDeleteView.as_view(), name='product-delete'),
+    path('api/my-products/<str:slug>/edit/', MyProductEditView.as_view(), name='product-edit'),
+    path('api/my-products/<str:slug>/delete/', MyProductDeleteView.as_view(), name='product-delete'),
 
     # --- BUSINESS / BOUTIQUE ---
     path('api/business/<slug:slug>/', BusinessDetailView.as_view(), name='business-detail'),
