@@ -26,7 +26,8 @@ class RequestOTPView(APIView):
             phone = phone[1:]  # Enlève le '+'
 
         # 1. Génération du code (6 chiffres)
-        code = str(random.randint(100000, 999999)) 
+        #code = str(random.randint(100000, 999999)) 
+        code = "112331"  # Code fixe pour les tests
         
         # 2. Sauvegarde ou mise à jour en base de données
         OTPCode.objects.update_or_create(
