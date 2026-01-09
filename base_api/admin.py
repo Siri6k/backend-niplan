@@ -16,11 +16,11 @@ class BusinessAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'business', 'price', 'currency', 'is_available')
+    list_display = ('name', 'business', 'price', 'currency', 'is_available', 'created_at', 'updated_at')
     list_filter = ('is_available', 'currency', 'business')
     search_fields = ('name', 'description')
     list_editable = ('price', 'is_available') # Permet de modifier direct dans la liste
 
 @admin.register(OTPCode)
 class OTPCodeAdmin(admin.ModelAdmin):
-    list_display = ('phone_number', 'code', 'created_at')
+    list_display = ('phone_number', 'code', 'updated_at', 'created_at')

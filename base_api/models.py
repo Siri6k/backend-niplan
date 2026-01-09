@@ -49,6 +49,7 @@ class Business(models.Model):
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     business_type = models.CharField(max_length=10, choices=TYPES, default='SHOP')
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
@@ -82,6 +83,7 @@ class Product(models.Model):
     location = models.CharField(max_length=100, blank=True, null=True)
     
     is_available = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -101,10 +103,11 @@ class Product(models.Model):
 class OTPCode(models.Model):
     phone_number = models.CharField(max_length=20)
     code = models.CharField(max_length=6)
+    updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-updated_at']
 
 
 

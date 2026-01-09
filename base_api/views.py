@@ -26,8 +26,8 @@ class RequestOTPView(APIView):
             phone = phone[1:]  # Enlève le '+'
 
         # 1. Génération du code (6 chiffres)
-        #code = str(random.randint(100000, 999999)) 
-        code = "112331"  # Code fixe pour les tests
+        code = str(random.randint(100000, 999999)) 
+        # code = str(112331)  # Code fixe pour les tests
         
         # 2. Sauvegarde ou mise à jour en base de données
         OTPCode.objects.update_or_create(
@@ -78,6 +78,7 @@ class VerifyOTPView(APIView):
                 "message": "Authentification réussie"
             })
         except:
+            
             return Response({"error": "Code invalide"}, status=400)
         
 
@@ -153,7 +154,7 @@ def send_whatsapp_otp(phone_number, code):
 
 
 class AdminUserListView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         users = User.objects.all().order_by('-date_joined')
@@ -166,7 +167,7 @@ class AdminUserListView(APIView):
         return Response(data)
 
 class AdminOTPLogView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [permissions.IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         # On récupère les 20 derniers codes générés
@@ -175,6 +176,6 @@ class AdminOTPLogView(APIView):
             "id": o.id,
             "phone": o.phone_number,
             "code": o.code,
-            "created_at": o.created_at.strftime("%H:%M:%S") # Heure de génération
+            "updated_at": o.updated_at.strftime("%H:%M:%S") # Heure de génération
         } for o in otps]
         return Response(data)
