@@ -153,6 +153,12 @@ def send_whatsapp_otp(phone_number, code):
 
 
 
+class MyBusinessUpdateView(generics.RetrieveUpdateAPIView):
+    serializer_class = BusinessSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.business
 class AdminUserListView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
 

@@ -96,8 +96,7 @@ class Product(models.Model):
             # Optionnel: ajouter un ID unique si deux produits ont le même nom
             if Product.objects.filter(slug=self.slug).exists():
                 self.slug = f"{self.slug}-{str(uuid.uuid4())[:8]}"
-        if self.is_available is None:
-            self.is_available = True
+        self.is_available = True
         super().save(*args, **kwargs)
     
 
