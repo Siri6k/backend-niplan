@@ -14,6 +14,10 @@ from django.contrib.auth import get_user_model
 
 import random # N'oublie pas l'import
 
+from django.core.cache import cache
+from django.conf import settings
+
+
 class RequestOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -85,9 +89,33 @@ class VerifyOTPView(APIView):
 
 # 1. Liste de tous les produits (Public - Home Page)
 class ProductListView(generics.ListAPIView):
-    queryset = Product.objects.filter(is_available=True).order_by('-created_at')
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        qs = Product.objects.filter(is_available=True).order_by('-updated_at')
+
+        currency = self.request.query_params.get("currency")
+        if currency:
+            qs = qs.filter(currency=currency)
+
+        return qs
+
+    def list(self, request, *args, **kwargs):
+        currency = request.query_params.get("currency", "all")
+        page = request.query_params.get("page", "1")
+
+        cache_key = f"product_list:{currency}:page:{page}"
+        ttl = getattr(settings, "CACHE_TTL", 300)
+
+        data = cache.get(cache_key)
+        if data:
+            return Response(data)
+
+        response = super().list(request, *args, **kwargs)
+        cache.set(cache_key, response.data, ttl)
+
+        return response
 
 # 2. CRUD Produits pour le vendeur (Privé - Dashboard)
 from rest_framework.exceptions import ValidationError

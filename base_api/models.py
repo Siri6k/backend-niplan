@@ -40,6 +40,7 @@ class Business(models.Model):
         ('SHOP', 'Boutique / Vente'),
         ('TROC', 'Troc / Échange'),
         ('IMMO', 'Immobilier'),
+        ('SERVICE', 'Services / Prestations'),
     ]
 
     owner = models.OneToOneField(User, on_delete=models.CASCADE, related_name='business')
@@ -49,16 +50,19 @@ class Business(models.Model):
     location = models.CharField(max_length=100, default='Kinshasa, RDC')
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     business_type = models.CharField(max_length=10, choices=TYPES, default='SHOP')
+    
+    # Metadata pour stocker horaires, réseaux sociaux, etc.
+    metadata = models.JSONField(default=dict, blank=True) 
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     def save(self, *args, **kwargs):
         self.slug = slugify(self.name)
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
-    
 
 
 class Product(models.Model):

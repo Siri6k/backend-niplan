@@ -1,7 +1,9 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from django.utils.text import slugify
-from .models import User, Business
+from .models import User, Business, Product
+from django.core.cache import cache
+from django_redis import get_redis_connection
 
 @receiver(post_save, sender=User)
 def create_automated_business(sender, instance, created, **kwargs):
@@ -29,3 +31,12 @@ def save_user_profile(sender, instance, **kwargs):
     Assure la mise à jour automatique si nécessaire.
     """
     instance.business.save()
+
+@receiver([post_save, post_delete], sender=Product)
+def clear_product_cache(sender, **kwargs):
+    # Supprime tout ce qui commence par product_list
+    redis = get_redis_connection("default")
+
+    keys = redis.keys("product_list*")
+    if keys:
+        redis.delete(*keys)

@@ -25,8 +25,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'rest_framework_simplejwt',
-    'base_api', # Ton application
     'drf_spectacular', # Pour la documentation API
+    'base_api',
+    'listing',
 ]
 
 # --- MIDDLEWARE ---
@@ -136,3 +137,18 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False, # Pour servir la doc HTML sans le fichier schema brut
     # ... autres options si besoin
 }
+
+# --- CACHE (Redis) ---
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": REDIS_URL,
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
+
+CACHE_TTL = 60 * 5  # 5 minutes

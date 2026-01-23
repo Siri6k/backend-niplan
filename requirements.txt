@@ -21,3 +21,6 @@ requests==2.31.0               # Pour les futurs appels API (WhatsApp)
 
 # --- Documentation API ---
 drf-spectacular==0.26.4 # Ou la dernière version
+
+# --- Cache ---
+django-redis>=5.4.0
