@@ -31,7 +31,7 @@ class Command(BaseCommand):
                         "condition": getattr(prod, "condition", "unknown"),
                         "stock_status": "in_stock",
                         "location": getattr(prod, "location", "unknown"),
-                        "slug": getattr(prod, "slug", ""),
+                        "old_slug": getattr(prod, "slug", ""),
                     },
                 )
 

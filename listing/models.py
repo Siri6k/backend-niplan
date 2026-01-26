@@ -54,6 +54,7 @@ class Listing(models.Model):
     is_active = models.BooleanField(default=True)
     is_promoted = models.BooleanField(default=False)
     
+    slug = models.SlugField(max_length=250, unique=True, null=True, blank=True)
     # Timestamps (Indispensable pour le cache et le tri)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -66,6 +67,16 @@ class Listing(models.Model):
             models.Index(fields=['business', 'is_active']),
         ]
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+            # Optionnel: ajouter un ID unique si deux produits ont le même nom
+            if Listing.objects.filter(slug=self.slug).exists():
+                self.slug = f"{self.slug}-by-{slugify(self.business.name)}"
+                if Listing.objects.filter(slug=self.slug).exists():
+                    self.slug = f"{self.slug}-{slugify(self.business.name)}-{str(uuid.uuid4())[:8]}"
+        self.is_active = True
+        super().save(*args, **kwargs)
     def __str__(self):
         return self.title
 
@@ -97,9 +108,30 @@ class ListingImage(models.Model):
 
 # --- 5. VERIFICATION (Système KYC) ---
 class VerificationRequest(models.Model):
-    STATUS = [('PENDING', 'Attente'), ('APPROVED', 'Approuvé'), ('REJECTED', 'Rejeté')]
-    
+    STATUS = [
+        ('PENDING', 'En attente'),
+        ('APPROVED', 'Approuvé'),
+        ('REJECTED', 'Rejeté'),
+    ]
+    DOC_TYPES = [
+        ('ID_CARD', 'Carte d’identité / Électeur'),
+        ('PASSPORT', 'Passeport'),
+        ('RCCM', 'Registre de Commerce (Pro)'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    doc_front = models.ImageField(upload_to='kyc/%Y/')
-    status = models.CharField(max_length=10, choices=STATUS, default='PENDING')
+    document_type = models.CharField(max_length=20, choices=DOC_TYPES, default='ID_CARD')
+    document_front = models.ImageField(upload_to='kyc/front/%Y/')
+    document_back = models.ImageField(upload_to='kyc/back/%Y/', blank=True, null=True)
+    status = models.CharField(max_length=15, choices=STATUS, default='PENDING')
     submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(blank=True, null=True)
+    rejection_reason = models.TextField(blank=True)
+
+    def save(self, *args, **kwargs):
+        # Si la vérification est approuvée, on met à jour le profil utilisateur
+        if self.status == 'APPROVED':
+            profile = self.user.userprofile
+            profile.is_verified = True
+            profile.save()
+        super().save(*args, **kwargs)

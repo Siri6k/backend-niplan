@@ -6,6 +6,6 @@ router = DefaultRouter()
 router.register(r'listings', ListingViewSet, basename='listing')
 
 urlpatterns = [
-    path('', ListingListView.as_view(), name='listing-list'),
-    path('my-listings/', include(router.urls)),
+    path('public/listings/', ListingListView.as_view(), name='public-listings'),
+    path('', include(router.urls)),
 ]

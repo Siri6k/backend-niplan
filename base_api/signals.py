@@ -24,6 +24,8 @@ def create_automated_business(sender, instance, created, **kwargs):
             slug=unique_slug,
             description="Bienvenue dans ma nouvelle boutique Niplan Market !"
         )
+        
+    
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
