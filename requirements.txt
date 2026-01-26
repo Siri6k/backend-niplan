@@ -24,3 +24,6 @@ drf-spectacular==0.26.4 # Ou la dernière version
 
 # --- Cache ---
 django-redis>=5.4.0
+redis>=4.5.5
+celery>=5.4.7
+django-celery-beat>=2.5.1

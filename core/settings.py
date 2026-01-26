@@ -152,3 +152,14 @@ CACHES = {
 }
 
 CACHE_TTL = 60 * 5  # 5 minutes
+
+# --- CELERY (Redis) ---
+# URL de Redis (le même que pour le cache, mais sur une DB différente, ex: DB 0)
+CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+
+# Paramètres de sécurité et format
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Africa/Kinshasa' # Très important pour Niplan

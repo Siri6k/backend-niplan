@@ -5,6 +5,8 @@ from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from .tasks import send_welcome_sms_task, notify_subscribers_task
 from .models import User, Business, Product, OTPCode
 from .serializers import UserSerializer, BusinessSerializer, ProductSerializer
 import requests
@@ -71,8 +73,11 @@ class VerifyOTPView(APIView):
 
             if user.is_superuser is True:
                 role="superadmin"
-            print("Génération des tokens pour l'utilisateur:", user.phone_whatsapp)
-                       
+            
+            send_welcome_sms_task.delay(
+                phone, 
+                user.business.name if user.business else "votre boutique"
+                )
             refresh = RefreshToken.for_user(user)
             return Response({
                 "access": str(refresh.access_token),
