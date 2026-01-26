@@ -37,6 +37,9 @@ urlpatterns = [
     # --- ADMIN ---
     path('api/admin/users/', AdminUserListView.as_view(), name='admin-users'),
     path('api/admin/otps/', AdminOTPLogView.as_view(), name='admin-otps'),
+
+    # --- LISTING (Annonces) ---
+    path('api/v2/', include('listing.urls')),
 ]
 
 # Servir les fichiers média en local (Cloudinary prend le relais en prod)

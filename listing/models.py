@@ -12,6 +12,7 @@ class UserProfile(models.Model):
     ACCOUNT_LEVELS = [
         ('BASIC', 'Compte Gratuit'),
         ('PRO', 'Professionnel / Fournisseur'),
+        ('OFFICIAL', 'Marque Officielle'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     first_name = models.CharField(max_length=50, blank=True)
@@ -45,8 +46,9 @@ class Listing(models.Model):
     barter_target = models.CharField(max_length=255, blank=True) # Ce qu'il veut en échange
 
     # Localisation propre à l'annonce
-    commune = models.CharField(max_length=100)
-    quartier = models.CharField(max_length=100, blank=True)
+    ville = models.CharField(max_length=100, default='Kinshasa')
+    commune = models.CharField(max_length=100, blank=True, null=True)
+    quartier = models.CharField(max_length=100, blank=True, null=True)
 
     # État de l'annonce
     is_active = models.BooleanField(default=True)
