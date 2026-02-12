@@ -3,6 +3,7 @@ from django.conf import settings
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework import viewsets, permissions, serializers
 from rest_framework.decorators import action
 
@@ -15,16 +16,19 @@ from listing.serializers import (
 )
 
 
+
 # ============================
 # PUBLIC LIST (HOME PAGE)
 # ============================
-class ListingListView(APIView):
-    """
-    Vue pour lister les annonces publiques avec mise en cache Redis.
-    """
+class ListingListView(ListAPIView):
     permission_classes = [permissions.AllowAny]
+    serializer_class = ListingPublicSerializer
+    pagination_class = None
 
-    def get(self, request):
+    def get_queryset(self):
+        return Listing.objects.filter(is_active=True).prefetch_related("images")
+    
+    def list(self, request, *args, **kwargs):
         cache_key = f"listings_{request.query_params.urlencode()}"
         ttl = getattr(settings, "CACHE_TTL", 900)
 
@@ -32,18 +36,13 @@ class ListingListView(APIView):
         if cached_data:
             return Response(cached_data)
 
-        listings = Listing.objects.filter(is_active=True)
-
-        # TODO: Filtres futurs
-        # category = request.query_params.get("category")
-        # if category:
-        #     listings = listings.filter(category=category)
-
-        serializer = ListingPublicSerializer(listings, many=True)
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
         data = serializer.data
 
         cache.set(cache_key, data, ttl)
         return Response(data)
+
 
 
 # ============================

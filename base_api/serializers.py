@@ -1,5 +1,22 @@
 from rest_framework import serializers
-from .models import User, Business, Product
+from .models import OTPCode, User, Business, Product
+
+
+class RequestOTPSerializer(serializers.Serializer):
+    phone_whatsapp = serializers.CharField()
+
+class VerifyOTPSerializer(serializers.Serializer):
+    phone_whatsapp = serializers.CharField()
+    code = serializers.CharField()
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ["id", "phone_whatsapp", "is_active", "is_staff", "is_superuser"]
+
+class OTPLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OTPCode
+        fields = ["id", "phone_number", "code", "updated_at"]
 
 # Serializer pour les produits
 class ProductSerializer(serializers.ModelSerializer):

@@ -8,7 +8,15 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .tasks import send_welcome_sms_task, notify_subscribers_task
 from .models import User, Business, Product, OTPCode
-from .serializers import UserSerializer, BusinessSerializer, ProductSerializer
+from .serializers import (
+    AdminUserSerializer,
+    OTPLogSerializer,
+    RequestOTPSerializer, 
+    UserSerializer,
+    BusinessSerializer,
+    ProductSerializer,
+    VerifyOTPSerializer
+    )
 import requests
 import os
 from rest_framework.permissions import IsAdminUser
@@ -18,11 +26,12 @@ import random # N'oublie pas l'import
 
 from django.core.cache import cache
 from django.conf import settings
+from rest_framework.generics import GenericAPIView
 
-
-class RequestOTPView(APIView):
+class RequestOTPView(GenericAPIView):
     permission_classes = [permissions.AllowAny]
-
+    serializer_class = RequestOTPSerializer
+    
     def post(self, request):
         phone = request.data.get('phone_whatsapp')
         
@@ -49,8 +58,9 @@ class RequestOTPView(APIView):
             "message": "Code généré avec succès",
         })
 
-class VerifyOTPView(APIView):
+class VerifyOTPView(GenericAPIView):
     permission_classes = [permissions.AllowAny]
+    serializer_class = VerifyOTPSerializer
 
     def post(self, request):
         phone = request.data.get('phone_whatsapp').strip()
@@ -82,7 +92,7 @@ class VerifyOTPView(APIView):
             return Response({
                 "access": str(refresh.access_token),
                 "refresh": str(refresh),
-                "business_slug": user.business.slug,
+                "business_slug": user.business.slug if user.business else None,
                 "role": role,
                 "message": "Authentification réussie"
             })
@@ -171,13 +181,6 @@ class BusinessDetailView(generics.RetrieveAPIView):
     lookup_field = 'slug' # Pour chercher par /maman-claire/ au lieu de l'ID
     permission_classes = [permissions.AllowAny]
 
-# Mise à jour de sa propre boutique (Logo, Nom)
-class MyBusinessUpdateView(generics.RetrieveUpdateAPIView):
-    serializer_class = BusinessSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        return self.request.user.business
     
 def send_whatsapp_otp(phone_number, code):
     ultraMSGInstance = os.getenv('ULTRAMSG_INSTANCE')
@@ -200,29 +203,15 @@ class MyBusinessUpdateView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user.business
-class AdminUserListView(APIView):
+    
+class AdminUserListView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
+    serializer_class = AdminUserSerializer
+    queryset = User.objects.all().order_by('-date_joined')
 
-    def get(self, request):
-        users = User.objects.all().order_by('-date_joined')
-        data = [{
-            "id": u.id,
-            "phone": u.phone_whatsapp,
-            "is_active": u.is_active,
-            "date_joined": u.date_joined.strftime("%d/%m/%Y %H:%M")
-        } for u in users]
-        return Response(data)
-
-class AdminOTPLogView(APIView):
+class AdminOTPLogView(generics.ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
+    serializer_class = OTPLogSerializer
 
-    def get(self, request):
-        # On récupère les 20 derniers codes générés
-        otps = OTPCode.objects.all().order_by('-id')[:20]
-        data = [{
-            "id": o.id,
-            "phone": o.phone_number,
-            "code": o.code,
-            "updated_at": o.updated_at.strftime("%H:%M:%S") # Heure de génération
-        } for o in otps]
-        return Response(data)
+    def get_queryset(self):
+        return OTPCode.objects.all().order_by('-id')[:20]
