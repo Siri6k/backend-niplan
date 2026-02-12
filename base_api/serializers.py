@@ -4,13 +4,15 @@ from .models import User, Business, Product
 # Serializer pour les produits
 class ProductSerializer(serializers.ModelSerializer):
     business_name = serializers.ReadOnlyField(source='business.name')
+    vendor_phone = serializers.ReadOnlyField(source='business.owner.phone_whatsapp')
 
     class Meta:
         model = Product
         fields = [
             'id', 'business', 'business_name', 'name', 'description', 
             'price', 'currency', 'image', 'exchange_for', 'slug',
-            'location', 'is_available', 'created_at', 'business'
+            'location', 'is_available', 'created_at', 'business', "updated_at", 
+            'vendor_phone'
         ]
         read_only_fields = ['business'] # <--- AJOUTE CECI
 
