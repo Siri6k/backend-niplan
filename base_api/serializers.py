@@ -9,9 +9,13 @@ class VerifyOTPSerializer(serializers.Serializer):
     phone_whatsapp = serializers.CharField()
     code = serializers.CharField()
 class AdminUserSerializer(serializers.ModelSerializer):
+    business = serializers.ReadOnlyField(source='business.name')
+    business_type = serializers.ReadOnlyField(source='business.business_type')
+
     class Meta:
         model = User
-        fields = ["id", "phone_whatsapp", "is_active", "is_staff", "is_superuser"]
+        fields = ["id", "phone_whatsapp", "is_active", "is_staff", 
+                  "is_superuser", "date_joined", "business", "business_type"]
 
 class OTPLogSerializer(serializers.ModelSerializer):
     class Meta:
