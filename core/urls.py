@@ -2,11 +2,14 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from base_api.views import (
-    AdminOTPLogView, AdminUserListView, MyProductEditView, MyProductListView, RequestOTPView, VerifyOTPView, 
+from base_api.controllers.ProductController import (
+    MyProductEditView, MyProductListView,
     ProductListView, MyProductCreateView, MyProductDeleteView,
-    BusinessDetailView, MyBusinessUpdateView
 )
+from base_api.controllers.AuthController import RequestOTPView, VerifyOTPView
+from base_api.controllers.AdminController import AdminUserListView, AdminOTPLogView
+from base_api.controllers.BusinessController import BusinessDetailView, MyBusinessUpdateView
+
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 

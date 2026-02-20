@@ -27,3 +27,6 @@ django-redis>=5.4.0
 redis>=4.5.5
 celery>=5.4.7
 django-celery-beat>=2.5.1
+
+# --- Twilio pour WhatsApp ---
+twilio==8.10.0

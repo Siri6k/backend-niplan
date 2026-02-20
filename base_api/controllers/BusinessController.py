@@ -1,27 +1,18 @@
-# Standard lib
-import json
-import os
-import random
+from rest_framework import generics, permissions
+from base_api.models import Product, Business
+from base_api.serializers import BusinessSerializer
 
-# Django
-from django.conf import settings
-from django.core.cache import cache
-from django.contrib.auth import get_user_model
+class BusinessDetailView(generics.RetrieveAPIView):
+    queryset = Business.objects.all()
+    serializer_class = BusinessSerializer
+    lookup_field = 'slug' # Pour chercher par /maman-claire/ au lieu de l'ID
+    permission_classes = [permissions.AllowAny]
 
-# DRF
-from rest_framework import generics, status, permissions, serializers
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAdminUser
-from rest_framework.exceptions import ValidationError
 
-# JWT
-from rest_framework_simplejwt.tokens import RefreshToken
+class MyBusinessUpdateView(generics.RetrieveUpdateAPIView):
+    serializer_class = BusinessSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-# HTTP
-import requests
-
-# Local apps
-from base_api.tasks import send_welcome_sms_task, notify_subscribers_task
-from base_api.models import User, Business, Product, OTPCode
-from base_api.serializers import UserSerializer, BusinessSerializer, ProductSerializer
+    def get_object(self):
+        return self.request.user.business
+    

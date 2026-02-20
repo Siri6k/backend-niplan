@@ -163,3 +163,15 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Africa/Kinshasa' # Très important pour Niplan
+
+# Credentials Twilio
+TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN')
+TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')  # Ex: 'whatsapp:+14155238886'
+TWILIO_OTP_TEMPLATE_SID = os.getenv('TWILIO_OTP_TEMPLATE_SID')  # SID du template de message OTP dans Twilio
+TWILIO_SMS_NUMBER = os.getenv('TWILIO_SMS_NUMBER')  # Numéro de téléphone pour l'envoi de SMS (si fallback nécessaire)
+TWILIO_SANDBOX_WHATSAPP_NUMBER=os.getenv('TWILIO_SANDBOX_WHATSAPP_NUMBER')  # Numéro de téléphone sandbox pour les tests WhatsApp (ex: 'whatsapp:+14155238886')
+
+# Credentials Telegram pour les notifications d'erreurs critiques
+TELEGRAM_ADMIN_CHAT_ID=os.getenv('TELEGRAM_ADMIN_CHAT_ID')  # Chat ID Telegram pour les notifications d'erreurs critiques
+TELEGRAM_BOT_TOKEN=os.getenv('TELEGRAM_BOT_TOKEN')  # Token du bot Telegram pour envoyer les notifications

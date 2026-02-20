@@ -1,41 +1,18 @@
-# Standard lib
-import json
-import os
-import random
-
-# Django
 from django.conf import settings
-from django.core.cache import cache
-from django.contrib.auth import get_user_model
-
-# DRF
-from rest_framework import generics, permissions, status, viewsets
+from rest_framework import generics, permissions
 from rest_framework.response import Response
-from rest_framework.permissions import IsAdminUser
+from base_api.models import Product
+from base_api.serializers import ProductSerializer
+from django.core.cache import cache
 from rest_framework.exceptions import ValidationError
 
-
-# JWT
-from rest_framework_simplejwt.tokens import RefreshToken
-
-# HTTP
-import requests
-
-# Local apps
-from base_api.tasks import send_welcome_sms_task, notify_subscribers_task
-from base_api.models import User, Business, Product, OTPCode
-from base_api.serializers import UserSerializer, BusinessSerializer, ProductSerializer
-
-
-# Controller pour la gestion des produits
-
-# 1. Liste des produits disponibles avec filtrage par devise et mise en cache
+# 1. Liste de tous les produits (Public - Home Page)
 class ProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
-        qs = Product.objects.filter(is_available=True).order_by("-updated_at")
+        qs = Product.objects.filter(is_available=True).order_by('-updated_at')
 
         currency = self.request.query_params.get("currency")
         if currency:
@@ -58,20 +35,20 @@ class ProductListView(generics.ListAPIView):
         cache.set(cache_key, response.data, ttl)
 
         return response
-    
 
 # 2. CRUD Produits pour le vendeur (Privé - Dashboard)
-class ProductViewSet(viewsets.ModelViewSet):
+
+class MyProductListView(generics.ListAPIView):
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated]
-    lookup_field = "slug"
-
-    CACHE_TTL = getattr(settings, "CACHE_TTL", 300)
 
     def get_queryset(self):
-        return Product.objects.filter(
-            business=self.request.user.business
-        ).order_by("-created_at")
+        # On filtre strictement par le business de l'utilisateur connecté
+        return Product.objects.filter(business=self.request.user.business).order_by('-created_at')
+
+class MyProductCreateView(generics.CreateAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -81,35 +58,21 @@ class ProductViewSet(viewsets.ModelViewSet):
                 {"business": "Vous devez créer un business avant d’ajouter un produit."}
             )
 
-        product = serializer.save(business=user.business)
+        serializer.save(business=user.business)
 
-        # Invalide le cache
-        cache.delete(f"user_products:{user.id}")
-        return product
+class MyProductEditView(generics.UpdateAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'slug' # Pour chercher par /maman-claire/ au lieu de l'ID
 
-    def perform_update(self, serializer):
-        product = serializer.save()
-        cache.delete(f"user_products:{self.request.user.id}")
-        return product
+    def get_queryset(self):
+        return Product.objects.filter(business=self.request.user.business)
 
-    def perform_destroy(self, instance):
-        instance.delete()
-        cache.delete(f"user_products:{self.request.user.id}")
+class MyProductDeleteView(generics.DestroyAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    lookup_field = 'slug' # Pour chercher par /maman-claire/ au lieu de l'ID
 
-    @action(detail=False, methods=["get"])
-    def mine(self, request):
-        """
-        GET /products/mine/
-        """
-        cache_key = f"user_products:{request.user.id}"
-
-        data = cache.get(cache_key)
-        if data:
-            return Response(data)
-
-        qs = self.get_queryset()
-        serializer = self.get_serializer(qs, many=True)
-        data = serializer.data
-
-        cache.set(cache_key, data, self.CACHE_TTL)
-        return Response(data)
+    def get_queryset(self):
+        return Product.objects.filter(business=self.request.user.business)
+ 

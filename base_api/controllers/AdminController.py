@@ -1,27 +1,17 @@
-# Standard lib
-import json
-import os
-import random
-
-# Django
-from django.conf import settings
-from django.core.cache import cache
-from django.contrib.auth import get_user_model
-
-# DRF
-from rest_framework import generics, status, permissions, serializers
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework import generics, permissions
 from rest_framework.permissions import IsAdminUser
-from rest_framework.exceptions import ValidationError
+from base_api.models import User, OTPCode
+from base_api.serializers import AdminUserSerializer, OTPLogSerializer
 
-# JWT
-from rest_framework_simplejwt.tokens import RefreshToken
 
-# HTTP
-import requests
+class AdminUserListView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdminUser]
+    serializer_class = AdminUserSerializer
+    queryset = User.objects.all().order_by('-date_joined')
 
-# Local apps
-from base_api.tasks import send_welcome_sms_task, notify_subscribers_task
-from base_api.models import User, Business, Product, OTPCode
-from base_api.serializers import UserSerializer, BusinessSerializer, ProductSerializer
+class AdminOTPLogView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsAdminUser]
+    serializer_class = OTPLogSerializer
+
+    def get_queryset(self):
+        return OTPCode.objects.all().order_by('-id')[:20]
