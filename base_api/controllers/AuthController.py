@@ -1,13 +1,13 @@
 from django.core.cache import cache
 from rest_framework import generics, permissions
-from core.utils.telegram_service import send_otp_to_admin
+from core.utils.telegram_service import send_error_to_admin, send_otp_to_admin
 from core.utils.twilio_service import send_otp
 from base_api.serializers import RequestOTPSerializer, VerifyOTPSerializer
 
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from base_api.models import User, OTPCode
-from base_api.tasks import send_welcome_sms_task
+from base_api.tasks import send_error_message, send_welcome_sms_task
 from django.conf import settings
 import random # N'oublie pas l'import
 import secrets # Pour une génération de code plus sécurisée
@@ -53,16 +53,13 @@ class RequestOTPView(generics.GenericAPIView):
         )
         if settings.DEBUG:
             print(f"[DEBUG] Code OTP pour {phone} : {code}")
-
-        # 3. Envoi du code via Twilio
-        send_otp_to_admin(phone, code)  # Envoie le code au superadmin sur Telegram pour validation manuelle (sandbox)
+        # 3. Envoi du code via Telegram au superadmin pour validation manuelle (sandbox)
+        result = send_otp_to_admin(phone, code)  # Envoie le code au superadmin sur Telegram pour validation manuelle (sandbox)
+        
+        # 4. Envoi du code via Twilio
         result = send_otp(phone, code, sandbox=True)
-        print(f"Résultat de l'envoi WhatsApp: {result}")
-        if not result['success']:
-            return Response({
-                    "error": "Erreur d'envoi WhatsApp",
-                    "details": result.get('error')
-                }, status=500)
+        if result['success'] is False:
+            send_error_message.delay(f"Erreur lors de l'envoi du SMS à {phone}: {result['error']}")
 
         return Response({
             "status": "success",
