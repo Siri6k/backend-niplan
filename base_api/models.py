@@ -8,33 +8,64 @@ class UserManager(BaseUserManager):
     def create_user(self, phone_whatsapp, password=None, **extra_fields):
         if not phone_whatsapp:
             raise ValueError("Le numéro WhatsApp est obligatoire")
+        
         user = self.model(phone_whatsapp=phone_whatsapp, **extra_fields)
-        user.set_password(password)
+        
+        if password:
+            user.set_password(password)
+            user.password_setup_required = False  # MDP défini = setup terminé
+        else:
+            user.set_unusable_password()
+            user.password_setup_required = True   # Doit définir MDP plus tard
+            
         user.save(using=self._db)
         return user
 
     def create_superuser(self, phone_whatsapp, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('is_active', True) # Important pour l'admin
-
+        extra_fields.setdefault('is_active', True)
+        
+        if not password:
+            raise ValueError("Le superuser doit avoir un mot de passe")
+            
         return self.create_user(phone_whatsapp, password, **extra_fields)
 
+
 class User(AbstractUser):
-    # Supprime le champ username par défaut
-    username = None 
-    phone_whatsapp = models.CharField(max_length=20, unique=True)
+    username = None
+    
+    phone_whatsapp = models.CharField(
+        max_length=20, 
+        unique=True,
+        verbose_name="Numéro WhatsApp"
+    )
+    
     is_active = models.BooleanField(default=False)
     
-    # On branche le nouveau manager
+    # TRUE = ancien user qui doit définir son MDP (ou nouveau sans MDP)
+    # FALSE = MDP déjà défini
+    password_setup_required = models.BooleanField(default=True)
+    
+    # TRUE = numéro vérifié par OTP (nouveaux users)
+    is_phone_verified = models.BooleanField(default=False)
+
     objects = UserManager()
 
     USERNAME_FIELD = 'phone_whatsapp'
-    REQUIRED_FIELDS = [] # Plus besoin de username ici
+    REQUIRED_FIELDS = []
+
+    class Meta:
+        verbose_name = "Utilisateur"
+        verbose_name_plural = "Utilisateurs"
 
     def __str__(self):
         return self.phone_whatsapp
-  
+
+    @property
+    def can_login_with_password(self):
+        """Vérifie si l'utilisateur peut se connecter avec un mot de passe"""
+        return not self.password_setup_required and self.has_usable_password()
 class Business(models.Model):
     TYPES = [
         ('SHOP', 'Boutique / Vente'),

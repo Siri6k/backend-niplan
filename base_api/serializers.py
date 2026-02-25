@@ -3,11 +3,12 @@ from .models import OTPCode, User, Business, Product
 
 
 class RequestOTPSerializer(serializers.Serializer):
-    phone_whatsapp = serializers.CharField()
+    phone_whatsapp = serializers.CharField(max_length=20)
 
 class VerifyOTPSerializer(serializers.Serializer):
-    phone_whatsapp = serializers.CharField()
-    code = serializers.CharField()
+    phone_whatsapp = serializers.CharField(max_length=20)
+    code = serializers.CharField(max_length=6)
+
 class AdminUserSerializer(serializers.ModelSerializer):
     business = serializers.ReadOnlyField(source='business.name')
     business_type = serializers.ReadOnlyField(source='business.business_type')
@@ -16,6 +17,20 @@ class AdminUserSerializer(serializers.ModelSerializer):
         model = User
         fields = ["id", "phone_whatsapp", "is_active", "is_staff", 
                   "is_superuser", "date_joined", "business", "business_type"]
+  
+class SetPasswordSerializer(serializers.Serializer):
+    phone_whatsapp = serializers.CharField(max_length=20)
+    password = serializers.CharField(min_length=8, write_only=True)
+    password_confirm = serializers.CharField(min_length=8, write_only=True)
+    
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError("Les mots de passe ne correspondent pas")
+        return data
+
+class LoginSerializer(serializers.Serializer):
+    phone_whatsapp = serializers.CharField(max_length=20)
+    password = serializers.CharField(write_only=True)
 
 class OTPLogSerializer(serializers.ModelSerializer):
     class Meta:

@@ -30,3 +30,6 @@ django-celery-beat>=2.5.1
 
 # --- Twilio pour WhatsApp ---
 twilio==8.10.0
+
+# --- AWS Lambda (si besoin de fonctions serverless) ---
+#mangum==0.14.0
