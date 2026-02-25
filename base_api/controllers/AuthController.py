@@ -199,7 +199,7 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
     
     def post(self, request):
         phone = normalize_phone(request.data.get('phone_whatsapp'))
-        code = request.data.get('code', '').strip()
+        code = request.data.get('code', '').strip() or ""  # Permet de forcer la vérification en dev
         password = request.data.get('password')
         
         # Validations
@@ -218,7 +218,7 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
         # Vérifie l'OTP
         try:
             is_phone_verified = True
-            if code != "":  # Permet de forcer la vérification en dev
+            if code:  # Permet de forcer la vérification en dev
                 otp = OTPCode.objects.get(phone_number=phone, code=code)
             else:
                 is_phone_verified = False
@@ -243,7 +243,8 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
                     phone_whatsapp=phone,
                     password=password,
                     is_phone_verified=is_phone_verified,
-                    password_setup_required=False
+                    password_setup_required=False,
+                    is_active=True
                 )
 
             # Nettoyage
@@ -436,31 +437,13 @@ class RequestOTPView(generics.GenericAPIView):
         
         # Détecte le type d'utilisateur et redirige
         try:
-            user = User.objects.get(phone_whatsapp=phone)
-            
-            if user.password_setup_required:
-                # Ancien user - redirige vers setup MDP
-                return Response({
-                    "status": "redirect",
-                    "message": "Veuillez définir votre mot de passe",
-                    "flow": "legacy_setup",
-                    "redirect_to": "/api/auth/legacy/set-password/",
-                    "requires_otp": False
-                })
-            else:
-                # User complet - redirige vers login
-                return Response({
-                    "status": "redirect",
-                    "message": "Utilisez le login avec mot de passe",
-                    "flow": "standard_login",
-                    "redirect_to": "/api/auth/login/",
-                    "requires_otp": False
-                })
-                
+            user = User.objects.get(phone_whatsapp=phone) 
         except User.DoesNotExist:
-            # Nouveau - continue avec OTP
-            pass
-        
+            return Response(
+                {"error": "Numéro non enregistré. Veuillez vous inscrire."},
+                status=status.HTTP_404_NOT_FOUND
+            )          
+   
         # Rate limiting
         cache_key = f"otp_attempts_{phone}"
         attempts = cache.get(cache_key, 0)
@@ -496,9 +479,7 @@ class RequestOTPView(generics.GenericAPIView):
         
         return Response({
             "status": "success",
-            "message": "Code envoyé",
-            "flow": "new_registration",
-            "step": "verify_otp"
+            "message": "Code envoyé avec succès"
         })
 
 
@@ -512,7 +493,7 @@ class VerifyOTPView(generics.GenericAPIView):
 
     def post(self, request):
         phone = normalize_phone(request.data.get('phone_whatsapp'))
-        code = request.data.get('code', '').strip()
+        code = request.data.get('otp_code', '').strip()
         
         if not all([phone, code]):
             return Response(
@@ -522,52 +503,26 @@ class VerifyOTPView(generics.GenericAPIView):
         
         try:
             otp = OTPCode.objects.get(phone_number=phone, code=code)
-            
-            # Vérifie si c'est un nouveau user ou ancien
-            user, created = User.objects.get_or_create(
-                phone_whatsapp=phone,
-                defaults={
-                    'is_active': True,
-                    'password_setup_required': True,  # Doit définir MDP
-                    'is_phone_verified': True
-                }
-            )
-            
-            # Si créé maintenant, c'est un nouveau user qui passe par l'ancien flow
-            # On lui demande de définir un MDP
-            if created or user.password_setup_required:
-                otp.delete()
-                cache.delete(f"otp_{phone}")
-                
-                return Response({
-                    "status": "success",
-                    "message": "Code valide. Définissez votre mot de passe.",
-                    "flow": "setup_password_required",
-                    "next_endpoint": "/api/auth/legacy/set-password/",
-                    "phone_whatsapp": phone,
-                    "requires_password_setup": True
-                })
-            
-            # Ancien comportement (user existant complet)
+            user = User.objects.get(phone_whatsapp=phone)
+            user.is_phone_verified = True
             if not user.is_active:
                 user.is_active = True
                 user.save()
-            
-            refresh = RefreshToken.for_user(user)
-            otp.delete()
-            cache.delete(f"otp_{phone}")
-            
-            return Response({
-                "access": str(refresh.access_token),
-                "refresh": str(refresh),
-                "is_phone_verified": user.is_phone_verified,  
-                "business_slug": user.business.slug if hasattr(user, 'business') and user.business else None,
-                "role": get_user_role(user),
-                "message": "Authentification réussie"
-            })
-            
-        except OTPCode.DoesNotExist:
+        except (User.DoesNotExist, OTPCode.DoesNotExist):
             return Response(
                 {"error": "Code invalide"}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+            
+        refresh = RefreshToken.for_user(user)
+        otp.delete()
+        cache.delete(f"otp_{phone}")
+        
+        return Response({
+            "access": str(refresh.access_token),
+            "refresh": str(refresh),
+            "is_phone_verified": user.is_phone_verified,  
+            "business_slug": user.business.slug if hasattr(user, 'business') and user.business else None,
+            "role": get_user_role(user),
+            "message": "Verification du numéro réussie"
+        })

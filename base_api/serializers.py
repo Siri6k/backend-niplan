@@ -8,6 +8,7 @@ class RequestOTPSerializer(serializers.Serializer):
 class VerifyOTPSerializer(serializers.Serializer):
     phone_whatsapp = serializers.CharField(max_length=20)
     code = serializers.CharField(max_length=6)
+    password = serializers.CharField(min_length=8, write_only=True)
 
 class AdminUserSerializer(serializers.ModelSerializer):
     business = serializers.ReadOnlyField(source='business.name')
