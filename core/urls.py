@@ -3,8 +3,8 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from base_api.controllers.ProductController import (
-    MyProductEditView, MyProductListView,
-    ProductListView, MyProductCreateView, MyProductDeleteView,
+    ProductListView,
+    MyProductViewSet,
 )
 from base_api.controllers.AuthController import (
     # Nouveau système
@@ -21,6 +21,10 @@ from base_api.controllers.AdminController import AdminUserListView, AdminOTPLogV
 from base_api.controllers.BusinessController import BusinessDetailView, MyBusinessUpdateView
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+
+from rest_framework.routers import DefaultRouter
+router = DefaultRouter()
+router.register(r'my-products', MyProductViewSet, basename='my-product')
 
 
 urlpatterns = [
@@ -53,13 +57,16 @@ urlpatterns = [
     path('api/phone/verify-otp/', VerifyOTPView.as_view(), name='verify-otp-deprecated'),
     #----------------------------------------------------------------#
     
-    # --- PRODUITS (PUBLIC & PRIVÉ) ---
+    # --- PRODUITS PUBLIC ---
     path('api/products/', ProductListView.as_view(), name='product-list'),
-    path('api/my-products/', MyProductListView.as_view(), name='my-product-list'),
-    path('api/my-products/create/', MyProductCreateView.as_view(), name='product-create'),
-    path('api/my-products/<str:slug>/edit/', MyProductEditView.as_view(), name='product-edit'),
-    path('api/my-products/<str:slug>/delete/', MyProductDeleteView.as_view(), name='product-delete'),
 
+    # --- CRUD PRIVÉ (La correction est ici) ---
+    # On inclut simplement les URLs du router à la racine de 'api/'
+    # Le router va générer : 
+    # GET/POST  -> api/my-products/
+    # GET/PUT/PATCH/DELETE -> api/my-products/<slug>/
+    path('api/', include(router.urls)),
+    
     # --- BUSINESS / BOUTIQUE ---
     path('api/business/<slug:slug>/', BusinessDetailView.as_view(), name='business-detail'),
     path('api/my-business/update/', MyBusinessUpdateView.as_view(), name='business-update'),

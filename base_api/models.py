@@ -137,14 +137,22 @@ class Product(models.Model):
         super().save(*args, **kwargs)
     
 
+
 class OTPCode(models.Model):
-    phone_number = models.CharField(max_length=20)
+    phone_number = models.CharField(max_length=20, db_index=True)
     code = models.CharField(max_length=6)
+    is_used = models.BooleanField(default=False)  # Missing field referenced in React
     updated_at = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['phone_number', '-updated_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.phone_number}: {self.code}"
 
 
 

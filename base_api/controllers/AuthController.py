@@ -249,7 +249,8 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
 
             # Nettoyage
             if is_phone_verified:
-                otp.delete()
+                otp.is_used = True
+                otp.save()
                 cache.delete(f"otp_{phone}")
             
             # Welcome SMS
@@ -453,7 +454,7 @@ class RequestOTPView(generics.GenericAPIView):
                 {"error": "Trop de tentatives. Réessayez dans 15 minutes."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS
             )
-        
+        # Incrémente le compteur de tentatives
         cache.set(cache_key, attempts + 1, timeout=900)
         
         # Génère et envoie OTP
@@ -515,7 +516,8 @@ class VerifyOTPView(generics.GenericAPIView):
             )
             
         refresh = RefreshToken.for_user(user)
-        otp.delete()
+        otp.is_used = True
+        otp.save()
         cache.delete(f"otp_{phone}")
         
         return Response({
