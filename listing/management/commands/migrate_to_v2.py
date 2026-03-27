@@ -15,6 +15,11 @@ class Command(BaseCommand):
             count = 0
 
             for prod in old_products:
+                # Tentative de découpage intelligent de la localisation "Ville, Commune"
+                location_parts = [p.strip() for p in (prod.location or "").split(",")]
+                ville = location_parts[0] if len(location_parts) > 0 else "Kinshasa"
+                commune = location_parts[1] if len(location_parts) > 1 else (prod.location or "")
+
                 new_listing = Listing.objects.create(
                     business=prod.business if hasattr(prod, "business") else None,
                     title=prod.name,
@@ -24,18 +29,17 @@ class Command(BaseCommand):
                     category="Général",
                     is_for_barter=bool(prod.exchange_for),
                     barter_target=prod.exchange_for or "",
-                    ville=prod.location or "Kinshasa",
+                    ville=ville,
+                    commune=commune,
                     specs={
                         "old_id": prod.id,
                         "migrated": True,
-                        "condition": getattr(prod, "condition", "unknown"),
-                        "stock_status": "in_stock",
-                        "location": getattr(prod, "location", "unknown"),
+                        "original_location": prod.location,
                         "old_slug": getattr(prod, "slug", ""),
                     },
                 )
 
-                if getattr(prod, "image", None):
+                if prod.image:
                     ListingImage.objects.create(
                         listing=new_listing,
                         image=prod.image,

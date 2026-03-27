@@ -46,9 +46,6 @@ class SetPasswordSerializer(serializers.Serializer):
             raise serializers.ValidationError({
                 "password_confirm": "Les mots de passe ne correspondent pas"
             })
-        
-        # Password strength validation
-                    
         return data
 
 
@@ -107,7 +104,6 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only_fields = ['business', 'slug']
     
     def get_image_url(self, obj):
-        """Return full URL for image"""
         if obj.image:
             request = self.context.get('request')
             if request:
@@ -116,40 +112,59 @@ class ProductSerializer(serializers.ModelSerializer):
         return None
     
     def validate_price(self, value):
-        """Ensure price is positive"""
         if value is not None and value < 0:
             raise serializers.ValidationError("Le prix ne peut pas être négatif")
         return value
 
+class BusinessPublicSerializer(serializers.ModelSerializer):
+    owner_phone = serializers.CharField(source='owner.phone_whatsapp', read_only=True)
+    is_phone_verified = serializers.BooleanField(source='owner.is_phone_verified', read_only=True)
+    listings = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Business
+        fields = ['name', 'slug', 'logo', 'created_at', 'location', 'owner_phone', 'is_phone_verified', 'listings']
+        read_only_fields = ['slug']
+    
+    def get_listings(self, obj):
+        from listing.serializers import ListingPublicSerializer
+        listings = obj.listings.filter(is_active=True).order_by('-updated_at')
+        return ListingPublicSerializer(listings, many=True).data
 
 class BusinessSerializer(serializers.ModelSerializer):
-    # FIXED: Use StringRelatedField or limit products to avoid N+1
     products = serializers.SerializerMethodField()
     owner_phone = serializers.CharField(source='owner.phone_whatsapp', read_only=True)
     product_count = serializers.IntegerField(source='products.count', read_only=True)
-    
+    is_phone_verified = serializers.BooleanField(source='owner.is_phone_verified', read_only=True)
+    listings = serializers.SerializerMethodField()
+
     class Meta:
         model = Business
         fields = [
             'id', 'owner_phone', 'name', 'slug', 'description', 
-            'logo', 'business_type', 'products', 'product_count',
-            'created_at', 'location'
+            'logo', 'business_type', 'products', 'product_count', 'listings',
+            'created_at', 'location', 'updated_at', 'is_phone_verified'
         ]
         read_only_fields = ['slug']
     
     def get_products(self, obj):
-        """Limit products to recent 20 to avoid huge payloads"""
-        # In view, use prefetch_related('products') to optimize
         products = obj.products.all().order_by('-updated_at')
         return ProductSerializer(products, many=True, context=self.context).data
-    
+
     def validate_name(self, value):
-        """Ensure business name is unique"""
         if Business.objects.filter(name__iexact=value).exclude(
             id=getattr(self.instance, 'id', None)
         ).exists():
             raise serializers.ValidationError("Une boutique avec ce nom existe déjà")
         return value
+
+    def get_listings(self, obj):
+        from listing.serializers import ListingPublicSerializer
+        listings = obj.listings.all().order_by('-updated_at')
+        return ListingPublicSerializer(listings, many=True).data
+
+    def get_is_phone_verified(self, obj):
+        return obj.owner.is_phone_verified
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -159,7 +174,4 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'phone_whatsapp', 'business', 'is_active', 'date_joined']
-        read_only_fields = ['phone_whatsapp']  # Prevent phone changes via this serializer
-
-
-    
+        read_only_fields = ['phone_whatsapp']

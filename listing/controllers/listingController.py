@@ -15,6 +15,11 @@ from listing.serializers import (
     ListingCreateUpdateSerializer,
 )
 
+from rest_framework.pagination import PageNumberPagination
+
+class ListingPagination(PageNumberPagination):
+    page_size = 20
+
 
 
 # ============================
@@ -23,13 +28,13 @@ from listing.serializers import (
 class ListingListView(ListAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = ListingPublicSerializer
-    pagination_class = None
+    pagination_class = ListingPagination
 
     def get_queryset(self):
-        return Listing.objects.filter(is_active=True).prefetch_related("images")
+        return Listing.objects.filter(is_active=True).select_related("business").prefetch_related("images")
     
     def list(self, request, *args, **kwargs):
-        cache_key = f"listings_{request.query_params.urlencode()}"
+        cache_key = f"listings_{request.query_params.urlencode()}_page_{request.query_params.get('page', 1)}"
         ttl = getattr(settings, "CACHE_TTL", 900)
 
         cached_data = cache.get(cache_key)
@@ -37,11 +42,38 @@ class ListingListView(ListAPIView):
             return Response(cached_data)
 
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        data = serializer.data
+        page = self.paginate_queryset(queryset)
 
-        cache.set(cache_key, data, ttl)
-        return Response(data)
+        serializer = self.get_serializer(page, many=True)
+        response = self.get_paginated_response(serializer.data)
+
+        cache.set(cache_key, response.data, ttl)
+        return response
+
+
+
+# ============================
+# PUBLIC DETAIL (SINGLE VIEW)
+# ============================
+class ListingDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, slug):
+        cache_key = f"public_listing_detail_{slug}"
+        ttl = getattr(settings, "CACHE_TTL", 900)
+
+        cached_data = cache.get(cache_key)
+        if cached_data:
+            return Response(cached_data)
+
+        try:
+            listing = Listing.objects.select_related("business").prefetch_related("images").get(slug=slug, is_active=True)
+            serializer = ListingDetailSerializer(listing)
+            data = serializer.data
+            cache.set(cache_key, data, ttl)
+            return Response(data)
+        except Listing.DoesNotExist:
+            return Response({"error": "Annonce introuvable"}, status=404)
 
 
 
@@ -51,14 +83,12 @@ class ListingListView(ListAPIView):
 class ListingViewSet(viewsets.ModelViewSet):
     """
     ViewSet Listings (Dashboard vendeur)
-    - Limite par type de compte
-    - Cache Redis par utilisateur
-    - Invalidation auto
     """
     permission_classes = [permissions.IsAuthenticated]
-    lookup_field = "slug"            # 👈 clé principale
-    lookup_url_kwarg = "slug"        # 👈 paramètre dans l’URL
+    lookup_field = "slug"
+    lookup_url_kwarg = "slug"
     CACHE_TTL = getattr(settings, "CACHE_TTL", 300)
+    pagination_class = ListingPagination
 
     def get_queryset(self):
         business = getattr(self.request.user, 'business', None)
@@ -66,7 +96,7 @@ class ListingViewSet(viewsets.ModelViewSet):
             return Listing.objects.none()
         return Listing.objects.filter(
             business=business
-        ).order_by('-created_at')
+        ).prefetch_related("images").order_by('-created_at')
 
     def get_serializer_class(self):
         if self.action in ["create", "update", "partial_update"]:
@@ -75,42 +105,19 @@ class ListingViewSet(viewsets.ModelViewSet):
             return ListingDetailSerializer
         if self.action == "my_listings":
             return ListingOwnerSerializer
-        return ListingPublicSerializer
+        return ListingOwnerSerializer
 
     def _user_cache_key(self, user_id):
         return f"user_listings:{user_id}"
 
     def perform_create(self, serializer):
         user = self.request.user
-        user_profile = getattr(user, 'userprofile', None)
-
-        if not user_profile:
-            user_profile, created = UserProfile.objects.get_or_create(
-                user=user,
-                defaults={
-                    "phone_number": user.phone_whatsapp,
-                    "account_type": "BASIC"
-                }
-            )
-
-        listing_count = Listing.objects.filter(
-            business=user.business, 
-            is_active=True).count()
-
-        account_limits = {
-            'BASIC': 10,
-            'PRO': 50,
-            'PREMIUM': 100,
-        }
-        limit = account_limits.get(user_profile.account_type.upper(), 10)
-        if listing_count >= limit and not user.is_superuser:
-            raise serializers.ValidationError(
-                f"Limite atteinte pour le compte {user_profile.account_type}. "
-                f"Max autorisé: {limit} annonces."
-            )
-
+        user_profile, created = UserProfile.objects.get_or_create(
+            user=user,
+            defaults={"phone_number": user.phone_whatsapp}
+        )
+        
         listing = serializer.save(business=user.business)
-
         cache.delete(self._user_cache_key(user.id))
         return listing
 
@@ -131,27 +138,19 @@ class ListingViewSet(viewsets.ModelViewSet):
         if data:
             return Response(data)
 
-        listings = self.get_queryset()
-        serializer = self.get_serializer(listings, many=True)
-        data = serializer.data
+        queryset = self.get_queryset()
 
+        # 🔥 IMPORTANT
+        serializer = ListingOwnerSerializer(queryset, many=True)
+
+        data = serializer.data
         cache.set(cache_key, data, self.CACHE_TTL)
         return Response(data)
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        cache_key = f"user_listings_stats:{request.user.id}"
-
-        data = cache.get(cache_key)
-        if data:
-            return Response(data)
-
         qs = self.get_queryset()
-        data = {
+        return Response({
             "total": qs.count(),
             "active": qs.filter(is_active=True).count(),
-            "inactive": qs.filter(is_active=False).count(),
-        }
-
-        cache.set(cache_key, data, self.CACHE_TTL)
-        return Response(data)
+        })

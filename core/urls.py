@@ -14,8 +14,6 @@ from base_api.controllers.AuthController import (
     LegacyUserSetPasswordView,
     LoginView,
     # Ancien (deprecated)
-    RequestOTPView,
-    VerifyOTPView,
 )
 from base_api.controllers.AdminController import AdminUserListView, AdminOTPLogView
 from base_api.controllers.BusinessController import BusinessDetailView, MyBusinessUpdateView
@@ -52,9 +50,6 @@ urlpatterns = [
     # Login standard
     path('api/auth/login/', LoginView.as_view(), name='login'),
     
-    # === ANCIEN SYSTÈME (temporaire) ===
-    path('api/phone/request-otp/', RequestOTPView.as_view(), name='request-otp-deprecated'),
-    path('api/phone/verify-otp/', VerifyOTPView.as_view(), name='verify-otp-deprecated'),
     #----------------------------------------------------------------#
     
     # --- PRODUITS PUBLIC ---

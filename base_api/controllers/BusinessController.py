@@ -3,7 +3,9 @@ from base_api.models import Product, Business
 from base_api.serializers import BusinessSerializer
 
 class BusinessDetailView(generics.RetrieveAPIView):
-    queryset = Business.objects.all()
+    queryset = Business.objects.all().prefetch_related(
+        'listings__images', 'listings__business', 'products'
+    )
     serializer_class = BusinessSerializer
     lookup_field = 'slug' # Pour chercher par /maman-claire/ au lieu de l'ID
     permission_classes = [permissions.AllowAny]
@@ -15,4 +17,3 @@ class MyBusinessUpdateView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user.business
-    
