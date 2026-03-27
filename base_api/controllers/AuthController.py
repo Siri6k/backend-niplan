@@ -118,6 +118,8 @@ class NewUserRequestOTPView(generics.GenericAPIView):
     
     def post(self, request):
         phone = normalize_phone(request.data.get('phone_whatsapp'))
+        hasRegistered = request.user or None
+
         
         if not phone:
             return Response(
@@ -136,11 +138,12 @@ class NewUserRequestOTPView(generics.GenericAPIView):
                     "redirect_to": "/api/auth/legacy/set-password/"
                 }, status=status.HTTP_400_BAD_REQUEST)
             else:
-                return Response({
-                    "error": "Ce numéro est déjà enregistré. Veuillez vous connecter.",
-                    "flow": "standard_login",
-                    "redirect_to": "/api/auth/login/"
-                }, status=status.HTTP_400_BAD_REQUEST)
+                if hasRegistered is None:
+                    return Response({
+                        "error": "Ce numéro est déjà enregistré. Veuillez vous connecter.",
+                        "flow": "standard_login",
+                        "redirect_to": "/api/auth/login/"
+                    }, status=status.HTTP_400_BAD_REQUEST)
                 
         except User.DoesNotExist:
             pass  # Continue avec l'envoi OTP
@@ -201,20 +204,22 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
         phone = normalize_phone(request.data.get('phone_whatsapp'))
         code = request.data.get('code', '').strip() or ""  # Permet de forcer la vérification en dev
         password = request.data.get('password')
+        hasRegistered = request.user or None
         
-        # Validations
-        if not all([phone, password]):
-            return Response(
-                {"error": "Numéro et mot de passe requis"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        if len(password) < 8:
-            return Response(
-                {"error": "Le mot de passe doit faire au moins 8 caractères"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
+        if hasRegistered is None:
+            # Validations
+            if not all([phone, password]):
+                return Response(
+                    {"error": "Numéro et mot de passe requis"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            if len(password) < 8:
+                return Response(
+                    {"error": "Le mot de passe doit faire au moins 8 caractères"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
         # Vérifie l'OTP
         try:
             is_phone_verified = True
@@ -232,10 +237,11 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
         try:
             try:
                 user = User.objects.get(phone_whatsapp=phone)
-                user.set_password(password)
+                if hasRegistered is None:
+                    user.set_password(password)
+                    user.password_setup_required = False
+                    user.is_active = True
                 user.is_phone_verified = is_phone_verified
-                user.password_setup_required = False
-                user.is_active = True
                 user.save()
 
             except User.DoesNotExist:
