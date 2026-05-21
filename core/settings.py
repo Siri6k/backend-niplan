@@ -23,7 +23,7 @@ ALLOWED_HOSTS = ['*'] # À restreindre plus tard à ton domaine .vercel.app ou .
 
 ALLOWED_HOSTS = env_list(
     'ALLOWED_HOSTS',
-    'localhost,127.0.0.1,niplan-market.vercel.app,.railway.app,.render.com'
+    'localhost,127.0.0.1,niplan-market.vercel.app,moaning-barbabra-niplan-48fc75fc.koyeb.app,.koyeb.app,.railway.app,.render.com'
 )
 
 # --- APPS ---
@@ -78,10 +78,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
-
-
-
-
 
 # --- BASE DE DONNÉES (Railway auto-config) ---
 DATABASES = {
@@ -149,7 +145,12 @@ CORS_ALLOW_ALLOWED_ORIGINS = [
 CORS_ALLOW_ALL_ORIGINS = DEBUG
 CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
-    'https://niplan-market.vercel.app,http://localhost:3000,http://localhost:5173'
+    'https://niplan-market.vercel.app,https://moaning-barbabra-niplan-48fc75fc.koyeb.app,http://localhost:3000,http://localhost:5173'
+)
+
+CSRF_TRUSTED_ORIGINS = env_list(
+    'CSRF_TRUSTED_ORIGINS',
+    'https://niplan-market.vercel.app,https://moaning-barbabra-niplan-48fc75fc.koyeb.app'
 )
 
 SPECTACULAR_SETTINGS = {
