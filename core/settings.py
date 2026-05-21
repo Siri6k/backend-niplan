@@ -1,8 +1,10 @@
 import os
+import ssl
 from pathlib import Path
 import dj_database_url
 from datetime import timedelta
 from dotenv import load_dotenv
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
@@ -13,6 +15,17 @@ def env_list(name, default=""):
         for item in os.environ.get(name, default).split(",")
         if item.strip()
     ]
+
+
+def normalize_redis_url(url):
+    """redis-py requires ssl_cert_reqs on rediss:// URLs."""
+    if not url or not url.startswith("rediss://"):
+        return url
+
+    parsed = urlsplit(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.setdefault("ssl_cert_reqs", "CERT_NONE")
+    return urlunsplit(parsed._replace(query=urlencode(query)))
 
 # --- SÉCURITÉ ---
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
@@ -162,7 +175,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 # --- CACHE (Redis) ---
-REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
+REDIS_URL = normalize_redis_url(os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"))
 
 CACHES = {
     "default": {
@@ -178,8 +191,10 @@ CACHE_TTL = 60 * 5  # 5 minutes
 
 # --- CELERY (Redis) ---
 # URL de Redis (le même que pour le cache, mais sur une DB différente, ex: DB 0)
-CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
-CELERY_RESULT_BACKEND = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_BROKER_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_URL.startswith("rediss://") else None
+CELERY_REDIS_BACKEND_USE_SSL = {"ssl_cert_reqs": ssl.CERT_NONE} if REDIS_URL.startswith("rediss://") else None
 
 # Paramètres de sécurité et format
 CELERY_ACCEPT_CONTENT = ['json']
