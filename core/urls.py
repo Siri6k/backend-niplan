@@ -19,6 +19,7 @@ from base_api.controllers.AdminController import AdminUserListView, AdminOTPLogV
 from base_api.controllers.BusinessController import BusinessDetailView, MyBusinessUpdateView
 
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 from rest_framework.routers import DefaultRouter
 router = DefaultRouter()
@@ -49,6 +50,7 @@ urlpatterns = [
     
     # Login standard
     path('api/auth/login/', LoginView.as_view(), name='login'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
     
     #----------------------------------------------------------------#
     

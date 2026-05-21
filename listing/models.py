@@ -131,7 +131,7 @@ class VerificationRequest(models.Model):
     def save(self, *args, **kwargs):
         # Si la vérification est approuvée, on met à jour le profil utilisateur
         if self.status == 'APPROVED':
-            profile = self.user.userprofile
+            profile = self.user.profile
             profile.is_verified = True
             profile.save()
         super().save(*args, **kwargs)

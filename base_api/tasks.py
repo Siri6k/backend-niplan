@@ -16,7 +16,11 @@ def notify_subscribers_task(product_id):
 def send_welcome_sms_task(phone_number, business_name):
     # Simuler l'envoi d'un SMS via une API externe
     print(f"Envoi du SMS à {phone_number}...")
-    send_welcome(phone_number)
+    result = send_welcome(phone_number)
+    if not result.get("success"):
+        send_error_to_admin(
+            f"Erreur envoi message de bienvenue a {phone_number}: {result.get('error')}"
+        )
     time.sleep(5) # On simule une attente de 5 secondes (l'API répond lentement)
     return f"SMS envoyé avec succès à {business_name}"
 

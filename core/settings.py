@@ -2,13 +2,29 @@ import os
 from pathlib import Path
 import dj_database_url
 from datetime import timedelta
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / '.env')
+
+def env_list(name, default=""):
+    return [
+        item.strip()
+        for item in os.environ.get(name, default).split(",")
+        if item.strip()
+    ]
 
 # --- SÉCURITÉ ---
-SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-123')
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-key-123' if DEBUG else None)
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY must be set when DEBUG=False")
 ALLOWED_HOSTS = ['*'] # À restreindre plus tard à ton domaine .vercel.app ou .railway.app
+
+ALLOWED_HOSTS = env_list(
+    'ALLOWED_HOSTS',
+    'localhost,127.0.0.1,niplan-market.vercel.app,.railway.app,.render.com'
+)
 
 # --- APPS ---
 INSTALLED_APPS = [
@@ -130,6 +146,12 @@ CORS_ALLOW_ALLOWED_ORIGINS = [
 
 
 # Configure le schéma OpenAPI
+CORS_ALLOW_ALL_ORIGINS = DEBUG
+CORS_ALLOWED_ORIGINS = env_list(
+    'CORS_ALLOWED_ORIGINS',
+    'https://niplan-market.vercel.app,http://localhost:3000,http://localhost:5173'
+)
+
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Niplan API',
     'DESCRIPTION': 'Documentation de l\'API Niplan pour les vendeurs et les clients.',
@@ -171,7 +193,7 @@ TWILIO_WHATSAPP_NUMBER = os.getenv('TWILIO_WHATSAPP_NUMBER')  # Ex: 'whatsapp:+1
 TWILIO_OTP_TEMPLATE_SID = os.getenv('TWILIO_OTP_TEMPLATE_SID')  # SID du template de message OTP dans Twilio
 TWILIO_SMS_NUMBER = os.getenv('TWILIO_SMS_NUMBER')  # Numéro de téléphone pour l'envoi de SMS (si fallback nécessaire)
 TWILIO_SANDBOX_WHATSAPP_NUMBER=os.getenv('TWILIO_SANDBOX_WHATSAPP_NUMBER')  # Numéro de téléphone sandbox pour les tests WhatsApp (ex: 'whatsapp:+14155238886')
-
+TWILIO_ALPHA_SENDER_ID=os.getenv('TWILIO_ALPHA_SENDER_ID')  # ID de l'expéditeur alphanumérique pour les messages SMS en DRC
 # Credentials Telegram pour les notifications d'erreurs critiques
 TELEGRAM_ADMIN_CHAT_ID=os.getenv('TELEGRAM_ADMIN_CHAT_ID')  # Chat ID Telegram pour les notifications d'erreurs critiques
 TELEGRAM_BOT_TOKEN=os.getenv('TELEGRAM_BOT_TOKEN')  # Token du bot Telegram pour envoyer les notifications

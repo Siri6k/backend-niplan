@@ -156,6 +156,8 @@ class ListingCreateUpdateSerializer(serializers.ModelSerializer):
 # VERIFICATION REQUEST
 # =======================
 class VerificationRequestSerializer(serializers.ModelSerializer):
+    doc_front = serializers.ImageField(source='document_front')
+
     class Meta:
         model = VerificationRequest
         fields = ['id', 'doc_front', 'status', 'submitted_at']

@@ -1,96 +1,145 @@
-from twilio.rest import Client
-from django.conf import settings
 import json
+import re
 
-# 🔹 Helper pour nettoyer le numéro
+from django.conf import settings
+from twilio.rest import Client
+
+
 def normalize_phone(phone_number, whatsapp=False):
-    number = phone_number.replace('+', '').replace(' ', '')
-    if whatsapp:
-        return f"whatsapp:+{number}"
-    return f"+{number}"
-
-# 🔹 Fonction pour envoyer WhatsApp (Sandbox ou Prod)
-def send_whatsapp(phone_number, message_text="", template_sid=None, sandbox=False):
     """
-    Envoi WhatsApp via Twilio.
-    sandbox=True => utilise le numéro sandbox Twilio
-    template_sid => pour prod avec template (OTP, etc.)
+    Return a Twilio-ready phone number.
+
+    Internal user records store numbers without '+', while Twilio expects E.164.
+    WhatsApp addresses must additionally be prefixed with 'whatsapp:'.
+    """
+    number = re.sub(r"[^\d]", "", str(phone_number or ""))
+    if not number:
+        raise ValueError("Numero de telephone requis")
+
+    e164_number = f"+{number}"
+    if whatsapp:
+        return f"whatsapp:{e164_number}"
+    return e164_number
+
+
+def _twilio_client():
+    if not settings.TWILIO_ACCOUNT_SID or not settings.TWILIO_AUTH_TOKEN:
+        raise ValueError("Configuration Twilio manquante: SID ou auth token")
+    return Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
+
+
+def send_whatsapp(phone_number, message_text="", template_sid=None, template_variables=None, sandbox=False):
+    """
+    Send a WhatsApp message through Twilio.
+
+    Production WhatsApp usually requires an approved Meta/Twilio template.
+    Sandbox can still use a free-form body for manual tests.
     """
     try:
-        client = Client(settings.TWILIO_ACCOUNT_SID, 
-                        settings.TWILIO_AUTH_TOKEN)
-        phone = "+243899530506" if sandbox else phone_number  # Override pour sandbox si besoin
+        from_number = (
+            settings.TWILIO_SANDBOX_WHATSAPP_NUMBER
+            if sandbox
+            else settings.TWILIO_WHATSAPP_NUMBER
+        )
+        if not from_number:
+            raise ValueError("Numero WhatsApp Twilio manquant")
 
-        to_number = normalize_phone(phone, whatsapp=True)
-        from_number = settings.TWILIO_SANDBOX_WHATSAPP_NUMBER if sandbox else settings.TWILIO_WHATSAPP_NUMBER
-
-        kwargs = {
+        payload = {
             "from_": from_number,
-            "to": to_number
+            "to": normalize_phone(phone_number, whatsapp=True),
         }
 
-        if sandbox:
-            # Sandbox = message libre
-            kwargs["body"] = message_text
+        if template_sid and not sandbox:
+            payload["content_sid"] = template_sid
+            if template_variables:
+                payload["content_variables"] = json.dumps(template_variables)
         else:
-            # Prod = template ou body
-            if template_sid:
-                kwargs["content_sid"] = template_sid
-                kwargs["body"] = message_text  # body pour variables du template si besoin
-            else:
-                kwargs["body"] = message_text
+            payload["body"] = message_text
 
-        message = client.messages.create(**kwargs)
-
+        message = _twilio_client().messages.create(**payload)
         return {"success": True, "sid": message.sid}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
-    except Exception as e:
-        return {"success": False, "error": str(e)}
 
-# 🔹 Fallback SMS classique
 def send_sms(phone_number, message_text):
+    """Send a classic SMS through Twilio."""
     try:
-        client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         to_number = normalize_phone(phone_number)
-        message = client.messages.create(
-            from_=settings.TWILIO_SMS_NUMBER,
+        from_number = getattr(settings, "TWILIO_ALPHA_SENDER_ID", None)
+        if not from_number:
+            from_number = settings.TWILIO_SMS_NUMBER
+        if not from_number:
+            raise ValueError("Numero SMS Twilio manquant")
+
+        message = _twilio_client().messages.create(
+            from_=from_number,
             to=to_number,
-            body=message_text
+            body=message_text,
         )
         return {"success": True, "sid": message.sid}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+    except Exception as exc:
+        return {"success": False, "error": str(exc)}
 
-# 🔹 OTP avec fallback WhatsApp → SMS
+
 def send_otp(phone_number, code, sandbox=False):
-    otp_text = f"🔐 Votre code Niplan Market est : {code}"
-    if sandbox:
-        otp_text += f"\n\n[Mode Sandbox] Ce message est envoyé depuis le numéro de test Twilio. \n Tranferez ca au numéro {normalize_phone(phone_number, whatsapp=True)} pour tester l'OTP WhatsApp."
+    """Send an OTP by SMS first, then fallback to WhatsApp."""
+    sms_text = f"Votre code Niplan Market est {code}. Expire dans 10 minutes."
 
-    # 1️⃣ Essai WhatsApp
-    whatsapp = send_whatsapp(
-        phone_number,
-        message_text=otp_text,
-        template_sid=settings.TWILIO_OTP_TEMPLATE_SID if not sandbox else None,
-        sandbox=sandbox
-    )
-    if whatsapp["success"]:
-        return {"success": True, "channel": "whatsapp", "sid": whatsapp["sid"]}
-
-    # 2️⃣ Fallback SMS
-    sms = send_sms(phone_number, f"Votre code Niplan Market est {code}. Expire dans 10 minutes.")
-    if sms["success"]:
+    sms = send_sms(phone_number, sms_text)
+    if sms.get("success") and sms.get("sid"):
         return {"success": True, "channel": "sms", "sid": sms["sid"]}
 
-    # 3️⃣ Échec total
-    return {"success": False, "error": {"whatsapp": whatsapp.get("error"), "sms": sms.get("error")}}
+    whatsapp = send_whatsapp(
+        phone_number,
+        message_text=f"Votre code Niplan Market est : {code}",
+        template_sid=settings.TWILIO_OTP_TEMPLATE_SID if not sandbox else None,
+        template_variables={"1": str(code)},
+        sandbox=sandbox,
+    )
+    if whatsapp.get("success") and whatsapp.get("sid"):
+        return {
+            "success": True,
+            "channel": "whatsapp",
+            "sid": whatsapp["sid"],
+            "fallback_from": "sms",
+            "sms_error": sms.get("error"),
+        }
 
-# 🔹 SMS de bienvenue (Sandbox ou Prod)
-def send_welcome(phone_number,  sandbox=False):
+    return {
+        "success": False,
+        "error": {
+            "sms": sms.get("error"),
+            "whatsapp": whatsapp.get("error"),
+        },
+    }
+
+
+def send_welcome(phone_number, sandbox=False):
     text = (
-        f"Bienvenue sur Niplan Market!\n\n"
+        "Bienvenue sur Niplan Market!\n\n"
         "Votre compte est actif.\n"
         "Vous pouvez maintenant publier vos produits et recevoir des commandes."
     )
 
-    return send_whatsapp(phone_number, message_text=text, sandbox=sandbox)
+    sms = send_sms(phone_number, "Bienvenue sur Niplan Market! Votre compte est actif.")
+    if sms.get("success") and sms.get("sid"):
+        return {"success": True, "channel": "sms", "sid": sms["sid"]}
+
+    whatsapp = send_whatsapp(phone_number, message_text=text, sandbox=sandbox)
+    if whatsapp.get("success") and whatsapp.get("sid"):
+        return {
+            "success": True,
+            "channel": "whatsapp",
+            "sid": whatsapp["sid"],
+            "fallback_from": "sms",
+            "sms_error": sms.get("error"),
+        }
+
+    return {
+        "success": False,
+        "error": {
+            "sms": sms.get("error"),
+            "whatsapp": whatsapp.get("error"),
+        },
+    }

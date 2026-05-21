@@ -152,7 +152,7 @@ class NewUserRequestOTPView(generics.GenericAPIView):
         cache_key = f"otp_attempts_{phone}"
         attempts = cache.get(cache_key, 0)
         
-        if attempts >= 5:
+        if attempts >= 3:
             return Response(
                 {"error": "Trop de tentatives. Réessayez dans 15 minutes."},
                 status=status.HTTP_429_TOO_MANY_REQUESTS
@@ -172,11 +172,9 @@ class NewUserRequestOTPView(generics.GenericAPIView):
         )
         
         # Envoi
-        if settings.DEBUG:
-            print(f"[DEBUG] Code OTP pour {phone} : {code}")
-        
+                
         send_otp_to_admin(phone, code)
-        result = send_otp(phone, code, sandbox=True)
+        result = send_otp(phone, code, sandbox=False)
         
         if not result.get('success'):
             send_error_message.delay(
@@ -221,10 +219,20 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
                 )
             
         # Vérifie l'OTP
+        if not code:
+            return Response(
+                {"error": "Code OTP requis"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         try:
             is_phone_verified = True
             if code:  # Permet de forcer la vérification en dev
-                otp = OTPCode.objects.get(phone_number=phone, code=code)
+                otp = OTPCode.objects.get(
+                    phone_number=phone,
+                    code=code,
+                    is_used=False,
+                )
             else:
                 is_phone_verified = False
         except OTPCode.DoesNotExist:
