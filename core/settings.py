@@ -4,7 +4,6 @@ from pathlib import Path
 import dj_database_url
 from datetime import timedelta
 from dotenv import load_dotenv
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from corsheaders.defaults import default_headers, default_methods
 
 BASE_DIR = Path(__file__).resolve().parent.parent
