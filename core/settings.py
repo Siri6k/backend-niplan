@@ -5,6 +5,7 @@ import dj_database_url
 from datetime import timedelta
 from dotenv import load_dotenv
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from corsheaders.defaults import default_headers, default_methods
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
@@ -62,9 +63,9 @@ INSTALLED_APPS = [
 # --- MIDDLEWARE ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'corsheaders.middleware.CorsMiddleware', # Indispensable pour React
     'whitenoise.middleware.WhiteNoiseMiddleware', # Pour les fichiers statiques
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # Indispensable pour React
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -160,6 +161,11 @@ CORS_ALLOWED_ORIGINS = env_list(
     'CORS_ALLOWED_ORIGINS',
     'https://niplan-market.vercel.app,https://moaning-barbabra-niplan-48fc75fc.koyeb.app,http://localhost:3000,http://localhost:5173'
 )
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'authorization',
+]
+CORS_ALLOW_METHODS = list(default_methods)
 
 CSRF_TRUSTED_ORIGINS = env_list(
     'CSRF_TRUSTED_ORIGINS',
