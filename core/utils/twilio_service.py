@@ -63,17 +63,22 @@ def send_whatsapp(phone_number, message_text="", template_sid=None, template_var
 
 
 def send_sms(phone_number, message_text):
-    """Send a classic SMS through Twilio."""
+    """Send an SMS – uses alphanumeric sender ID for DRC numbers, otherwise uses Twilio phone number."""
     try:
         to_number = normalize_phone(phone_number)
-        from_number = getattr(settings, "TWILIO_ALPHA_SENDER_ID", None)
-        if not from_number:
-            from_number = settings.TWILIO_SMS_NUMBER
-        if not from_number:
-            raise ValueError("Numero SMS Twilio manquant")
-
+        
+        # Determine the 'from' value based on country code
+        if to_number.startswith("+243"):                     # DRC country code
+            if not settings.TWILIO_ALPHA_SENDER_ID:
+                raise ValueError("Alphanumeric Sender ID for DRC is not configured.")
+            from_value = settings.TWILIO_ALPHA_SENDER_ID
+        else:
+            if not settings.TWILIO_SMS_NUMBER:
+                raise ValueError("Twilio phone number is not configured.")
+            from_value = settings.TWILIO_SMS_NUMBER
+        
         message = _twilio_client().messages.create(
-            from_=from_number,
+            from_=from_value,
             to=to_number,
             body=message_text,
         )
@@ -84,7 +89,7 @@ def send_sms(phone_number, message_text):
 
 def send_otp(phone_number, code, sandbox=False):
     """Send an OTP by SMS first, then fallback to WhatsApp."""
-    sms_text = f"Votre code Niplan Market est {code}. Expire dans 10 minutes."
+    sms_text = f"Votre code Niplan Market est : {code}. Il expire dans 5 minutes. Ne partagez ce code avec personne."
 
     sms = send_sms(phone_number, sms_text)
     if sms.get("success") and sms.get("sid"):
@@ -92,7 +97,7 @@ def send_otp(phone_number, code, sandbox=False):
 
     whatsapp = send_whatsapp(
         phone_number,
-        message_text=f"Votre code Niplan Market est : {code}",
+        message_text=f"Votre code Niplan Market est : {code}. Il expire dans 5 minutes. Ne partagez ce code avec personne.",
         template_sid=settings.TWILIO_OTP_TEMPLATE_SID if not sandbox else None,
         template_variables={"1": str(code)},
         sandbox=sandbox,

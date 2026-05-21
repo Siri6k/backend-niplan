@@ -231,7 +231,6 @@ class NewUserVerifyOTPView(generics.GenericAPIView):
                 otp = OTPCode.objects.get(
                     phone_number=phone,
                     code=code,
-                    is_used=False,
                 )
             else:
                 is_phone_verified = False
