@@ -18,15 +18,6 @@ def env_list(name, default=""):
     ]
 
 
-def normalize_redis_url(url):
-    """redis-py requires ssl_cert_reqs on rediss:// URLs."""
-    if not url or not url.startswith("rediss://"):
-        return url
-
-    parsed = urlsplit(url)
-    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
-    query.setdefault("ssl_cert_reqs", "CERT_NONE")
-    return urlunsplit(parsed._replace(query=urlencode(query)))
 
 # --- SÉCURITÉ ---
 DEBUG = os.environ.get('DEBUG', 'False') == 'True'
@@ -181,7 +172,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 # --- CACHE (Redis) ---
-REDIS_URL = normalize_redis_url(os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1"))
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
 
 CACHES = {
     "default": {
