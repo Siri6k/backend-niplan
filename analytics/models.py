@@ -9,6 +9,7 @@ class AnalyticsEvent(models.Model):
         ("whatsapp_click", "WhatsApp click"),
         ("listing_view", "Listing view"),
         ("business_view", "Business view"),
+        ("share_click", "Share click"),
     ]
 
     event_type = models.CharField(max_length=40, choices=EVENT_TYPES)

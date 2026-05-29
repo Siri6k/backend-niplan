@@ -33,6 +33,9 @@ class ListingPublicSerializer(serializers.ModelSerializer):
     business_name = serializers.CharField(source='business.name', read_only=True)
     business_slug = serializers.CharField(source='business.slug', read_only=True)
     vendor_phone = serializers.CharField(source='business.owner.phone_whatsapp', read_only=True)
+    views = serializers.SerializerMethodField()
+    whatsapp_clicks = serializers.SerializerMethodField()
+    share_clicks = serializers.SerializerMethodField()
 
     class Meta:
         model = Listing
@@ -40,8 +43,29 @@ class ListingPublicSerializer(serializers.ModelSerializer):
             'id', 'title', 'price', 'currency',
             'category', 'commune', 'quartier',
             'slug', 'business_name', 'business_slug', 'vendor_phone', 'main_image',
-            'created_at', 'is_for_barter', 'is_new'
+            'created_at', 'is_for_barter', 'is_new', 'views', 'whatsapp_clicks', 'share_clicks'
         ]
+
+    def get_views(self, obj):
+        try:
+            events = obj.analytics_events.all()
+            return sum(1 for e in events if e.event_type == "listing_view")
+        except Exception:
+            return 0
+
+    def get_whatsapp_clicks(self, obj):
+        try:
+            events = obj.analytics_events.all()
+            return sum(1 for e in events if e.event_type == "whatsapp_click")
+        except Exception:
+            return 0
+
+    def get_share_clicks(self, obj):
+        try:
+            events = obj.analytics_events.all()
+            return sum(1 for e in events if e.event_type == "share_click")
+        except Exception:
+            return 0
 
     def get_main_image(self, obj):
         # Optimisation N+1 Query : Utilise prefetch_related loaded data
@@ -68,6 +92,9 @@ class ListingDetailSerializer(serializers.ModelSerializer):
     business_logo = serializers.SerializerMethodField()
     vendor_phone = serializers.CharField(source='business.owner.phone_whatsapp', read_only=True)
     is_verified = serializers.BooleanField(source='business.owner.is_phone_verified', read_only=True) 
+    views = serializers.SerializerMethodField()
+    whatsapp_clicks = serializers.SerializerMethodField()
+    share_clicks = serializers.SerializerMethodField()
     
     class Meta:
         model = Listing
@@ -76,9 +103,31 @@ class ListingDetailSerializer(serializers.ModelSerializer):
             'category', 'specs', 'is_for_barter', 'barter_target',
             'commune', 'quartier', 'created_at', 'updated_at',
             'slug', 'images', 'business_name', 'business_slug', 
-            'business_logo', 'vendor_phone', 'is_verified'
+            'business_logo', 'vendor_phone', 'is_verified', 'views', 
+            'whatsapp_clicks', 'share_clicks'
         ]
     
+    def get_views(self, obj):
+        try:
+            events = obj.analytics_events.all()
+            return sum(1 for e in events if e.event_type == "listing_view")
+        except Exception:
+            return 0
+
+    def get_whatsapp_clicks(self, obj):
+        try:
+            events = obj.analytics_events.all()
+            return sum(1 for e in events if e.event_type == "whatsapp_click")
+        except Exception:
+            return 0
+
+    def get_share_clicks(self, obj):
+        try:
+            events = obj.analytics_events.all()
+            return sum(1 for e in events if e.event_type == "share_click")
+        except Exception:
+            return 0
+
     def get_business_logo(self, obj):
         return obj.business.logo.url if obj.business.logo else None
 

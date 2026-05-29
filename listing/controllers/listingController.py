@@ -31,7 +31,7 @@ class ListingListView(ListAPIView):
     pagination_class = ListingPagination
 
     def get_queryset(self):
-        return Listing.objects.filter(is_active=True).select_related("business").prefetch_related("images")
+        return Listing.objects.filter(is_active=True).select_related("business").prefetch_related("images", "analytics_events")
     
     def list(self, request, *args, **kwargs):
         cache_key = f"listings_{request.query_params.urlencode()}_page_{request.query_params.get('page', 1)}"
@@ -67,7 +67,7 @@ class ListingDetailView(APIView):
             return Response(cached_data)
 
         try:
-            listing = Listing.objects.select_related("business").prefetch_related("images").get(slug=slug, is_active=True)
+            listing = Listing.objects.select_related("business").prefetch_related("images", "analytics_events").get(slug=slug, is_active=True)
             serializer = ListingDetailSerializer(listing)
             data = serializer.data
             cache.set(cache_key, data, ttl)

@@ -27,15 +27,26 @@ def get_vendor_analytics_summary(user):
     if not business:
         return {
             "active_listings": 0,
+            "listing_views_total": 0,
+            "business_views_total": 0,
             "whatsapp_clicks_total": 0,
             "whatsapp_clicks_7d": 0,
+            "contact_rate": 0,
             "top_listings": [],
         }
 
-    events = AnalyticsEvent.objects.filter(
+    whatsapp_events = AnalyticsEvent.objects.filter(
         business=business,
         event_type="whatsapp_click",
     )
+    listing_views_total = AnalyticsEvent.objects.filter(
+        business=business,
+        event_type="listing_view",
+    ).count()
+    business_views_total = AnalyticsEvent.objects.filter(
+        business=business,
+        event_type="business_view",
+    ).count()
     since_7d = timezone.now() - timedelta(days=7)
     top_listings = (
         Listing.objects.filter(business=business, is_active=True)
@@ -43,20 +54,31 @@ def get_vendor_analytics_summary(user):
             whatsapp_clicks=Count(
                 "analytics_events",
                 filter=Q(analytics_events__event_type="whatsapp_click"),
+            ),
+            listing_views=Count(
+                "analytics_events",
+                filter=Q(analytics_events__event_type="listing_view"),
             )
         )
-        .filter(whatsapp_clicks__gt=0)
+        .filter(Q(whatsapp_clicks__gt=0) | Q(listing_views__gt=0))
         .order_by("-whatsapp_clicks", "-updated_at")[:5]
     )
+    whatsapp_clicks_total = whatsapp_events.count()
 
     return {
         "active_listings": Listing.objects.filter(business=business, is_active=True).count(),
-        "whatsapp_clicks_total": events.count(),
-        "whatsapp_clicks_7d": events.filter(created_at__gte=since_7d).count(),
+        "listing_views_total": listing_views_total,
+        "business_views_total": business_views_total,
+        "whatsapp_clicks_total": whatsapp_clicks_total,
+        "whatsapp_clicks_7d": whatsapp_events.filter(created_at__gte=since_7d).count(),
+        "contact_rate": round((whatsapp_clicks_total / listing_views_total) * 100, 1)
+        if listing_views_total
+        else 0,
         "top_listings": [
             {
                 "slug": listing.slug,
                 "title": listing.title,
+                "listing_views": listing.listing_views,
                 "whatsapp_clicks": listing.whatsapp_clicks,
             }
             for listing in top_listings

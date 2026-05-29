@@ -90,6 +90,26 @@ class AnalyticsAPITest(APITestCase):
         self.assertEqual(event.listing, self.listing)
         self.assertEqual(event.business, self.business)
 
+    def test_post_analytics_event_share_click(self):
+        response = self.client.post(
+            "/api/analytics/events/",
+            {
+                "event_type": "share_click",
+                "source": "listing_detail",
+                "listing_slug": self.listing.slug,
+                "business_slug": self.business.slug,
+                "metadata": {"platform": "whatsapp"},
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(AnalyticsEvent.objects.count(), 1)
+        event = AnalyticsEvent.objects.first()
+        self.assertEqual(event.event_type, "share_click")
+        self.assertEqual(event.listing, self.listing)
+        self.assertEqual(event.business, self.business)
+
     def test_post_analytics_event_invalid_type(self):
         response = self.client.post(
             "/api/analytics/events/",
@@ -121,6 +141,23 @@ class AnalyticsAPITest(APITestCase):
             business=self.business,
             listing=self.listing,
         )
+        AnalyticsEvent.objects.create(
+            event_type="listing_view",
+            source="listing_detail",
+            business=self.business,
+            listing=self.listing,
+        )
+        AnalyticsEvent.objects.create(
+            event_type="listing_view",
+            source="listing_detail",
+            business=self.business,
+            listing=self.listing,
+        )
+        AnalyticsEvent.objects.create(
+            event_type="business_view",
+            source="business_page",
+            business=self.business,
+        )
         old_event = AnalyticsEvent.objects.create(
             event_type="whatsapp_click",
             source="listing_detail",
@@ -136,8 +173,12 @@ class AnalyticsAPITest(APITestCase):
         self.assertEqual(response.status_code, 200)
         data = response.data
         self.assertEqual(data["active_listings"], 1)
+        self.assertEqual(data["listing_views_total"], 2)
+        self.assertEqual(data["business_views_total"], 1)
         self.assertEqual(data["whatsapp_clicks_total"], 3)
         self.assertEqual(data["whatsapp_clicks_7d"], 2)
+        self.assertEqual(data["contact_rate"], 150.0)
         self.assertEqual(len(data["top_listings"]), 1)
         self.assertEqual(data["top_listings"][0]["slug"], self.listing.slug)
+        self.assertEqual(data["top_listings"][0]["listing_views"], 2)
         self.assertEqual(data["top_listings"][0]["whatsapp_clicks"], 3)
