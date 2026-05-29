@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework_simplejwt',
     'drf_spectacular', # Pour la documentation API
+    'analytics',
     'base_api',
     'listing',
 ]

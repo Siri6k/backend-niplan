@@ -32,13 +32,14 @@ class ListingPublicSerializer(serializers.ModelSerializer):
     main_image = serializers.SerializerMethodField()
     business_name = serializers.CharField(source='business.name', read_only=True)
     business_slug = serializers.CharField(source='business.slug', read_only=True)
+    vendor_phone = serializers.CharField(source='business.owner.phone_whatsapp', read_only=True)
 
     class Meta:
         model = Listing
         fields = [
             'id', 'title', 'price', 'currency',
             'category', 'commune', 'quartier',
-            'slug', 'business_name', 'business_slug', 'main_image',
+            'slug', 'business_name', 'business_slug', 'vendor_phone', 'main_image',
             'created_at', 'is_for_barter', 'is_new'
         ]
 

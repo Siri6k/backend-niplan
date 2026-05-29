@@ -72,6 +72,9 @@ urlpatterns = [
     path('api/admin/users/', AdminUserListView.as_view(), name='admin-users'),
     path('api/admin/otps/', AdminOTPLogView.as_view(), name='admin-otps'),
 
+    # --- ANALYTICS ---
+    path('api/analytics/', include('analytics.urls')),
+
     # --- LISTING (Annonces) ---
     path('api/v2/', include('listing.urls')),
 ]

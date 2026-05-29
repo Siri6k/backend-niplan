@@ -1,3 +1,4 @@
 from django.test import TestCase
 
-# Create your tests here.
+
+# Listing-specific tests live here. Analytics tests live in analytics/tests.py.

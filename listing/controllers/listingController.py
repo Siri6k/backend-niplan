@@ -76,7 +76,6 @@ class ListingDetailView(APIView):
             return Response({"error": "Annonce introuvable"}, status=404)
 
 
-
 # ============================
 # AUTHENTICATED VIEWSET
 # ============================
